@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useWallet } from "@solana/wallet-adapter-react";
 import dynamic from "next/dynamic";
+import { get_order } from "../utils/jupiter";
 
 // 動態匯入 WalletMultiButton，避免在 Next.js Server-Side Rendering (SSR) 時發生錯誤
 const WalletMultiButton = dynamic(
@@ -28,9 +29,24 @@ export default function Home() {
         <WalletMultiButton />
 
         {connected && publicKey && (
-          <div className="mt-6 p-4 rounded-lg bg-green-50 text-green-800 border border-green-200 break-all w-full text-center">
+          <div className="mt-6 p-4 rounded-lg bg-green-50 text-green-800 border border-green-200 break-all w-full text-center flex flex-col items-center gap-4">
             <p className="font-semibold">✅ 錢包已連線！</p>
-            <p className="mt-2 text-sm">地址: {publicKey.toString()}</p>
+            <p className="text-sm">地址: {publicKey.toString()}</p>
+            <button
+              onClick={async () => {
+                try {
+                  const order = await get_order();
+                  console.log("Jupiter 訂單結果:", order);
+                  alert("獲取訂單成功！請查看瀏覽器控制台 (F12)。");
+                } catch (error) {
+                  console.error(error);
+                  alert("獲取訂單失敗，詳情請看控制台。");
+                }
+              }}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+              測試取得 Jupiter 訂單
+            </button>
           </div>
         )}
       </main>
