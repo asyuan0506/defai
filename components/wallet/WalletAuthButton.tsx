@@ -48,10 +48,20 @@ export function WalletAuthButton() {
 
       // 1. Wallet popup #1 — Supabase SIWS (Sign-In-With-Solana) flow
       setStep("signing-auth");
+      // Adapter: Supabase expects (...inputs) => Promise<Output | Output[]>
+      // but wallet-adapter provides (input?) => Promise<Output>. Cast via unknown.
+      const walletAdapter = wallet.signIn
+        ? {
+            ...wallet,
+            signIn: (...inputs: unknown[]) =>
+              wallet.signIn!(inputs[0] as Parameters<typeof wallet.signIn>[0]) as Promise<unknown>,
+          }
+        : wallet;
       const { data, error: signInError } = await supabase.auth.signInWithWeb3({
         chain: "solana",
         statement: "Login DeLLM",
-        wallet,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        wallet: walletAdapter as any,
         options: { captchaToken },
       });
 
