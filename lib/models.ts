@@ -1,0 +1,196 @@
+export interface ModelInfo {
+  id: string;
+  name: string;
+  contextWindow: number;
+  inputPricePerToken: number;       // USD per token
+  outputPricePerToken: number;      // USD per token
+  supportsImages: boolean;
+  estimatedMaxOutputTokens: number; // conservative estimate for pre-deduct billing
+}
+
+// Prices sourced from io.net /v1/models API (2026-04-05).
+// Update when io.net adds/removes models or changes pricing.
+export const MODEL_CATALOG: Record<string, ModelInfo> = {
+  "openai/gpt-oss-20b": {
+    id: "openai/gpt-oss-20b",
+    name: "OpenAI: GPT-OSS 20B",
+    contextWindow: 64000,
+    inputPricePerToken: 1.6e-8,
+    outputPricePerToken: 6e-8,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 2048,
+  },
+  "openai/gpt-oss-120b": {
+    id: "openai/gpt-oss-120b",
+    name: "OpenAI: GPT-OSS 120B",
+    contextWindow: 131072,
+    inputPricePerToken: 2e-8,
+    outputPricePerToken: 1e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "mistralai/Mistral-Nemo-Instruct-2407": {
+    id: "mistralai/Mistral-Nemo-Instruct-2407",
+    name: "Mistral: Nemo Instruct",
+    contextWindow: 128000,
+    inputPricePerToken: 2e-8,
+    outputPricePerToken: 4e-8,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "Qwen/Qwen2.5-VL-32B-Instruct": {
+    id: "Qwen/Qwen2.5-VL-32B-Instruct",
+    name: "Qwen: Qwen2.5 VL 32B Instruct",
+    contextWindow: 32000,
+    inputPricePerToken: 5e-8,
+    outputPricePerToken: 2.2e-7,
+    supportsImages: true,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "Qwen/Qwen3-Next-80B-A3B-Instruct": {
+    id: "Qwen/Qwen3-Next-80B-A3B-Instruct",
+    name: "Qwen: Qwen3 Next 80B",
+    contextWindow: 262144,
+    inputPricePerToken: 6e-8,
+    outputPricePerToken: 6e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "meta-llama/Llama-3.3-70B-Instruct": {
+    id: "meta-llama/Llama-3.3-70B-Instruct",
+    name: "Meta: Llama 3.3 70B Instruct",
+    contextWindow: 128000,
+    inputPricePerToken: 1e-7,
+    outputPricePerToken: 3.2e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "meta-llama/Llama-3.2-90B-Vision-Instruct": {
+    id: "meta-llama/Llama-3.2-90B-Vision-Instruct",
+    name: "Meta-Llama: Llama 3.2 90B Vision",
+    contextWindow: 16000,
+    inputPricePerToken: 3.5e-7,
+    outputPricePerToken: 4e-7,
+    supportsImages: true,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8": {
+    id: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+    name: "Meta-Llama: Llama 4 Maverick 17B",
+    contextWindow: 430000,
+    inputPricePerToken: 1.5e-7,
+    outputPricePerToken: 6e-7,
+    supportsImages: true,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "Intel/Qwen3-Coder-480B-A35B-Instruct-int4-mixed-ar": {
+    id: "Intel/Qwen3-Coder-480B-A35B-Instruct-int4-mixed-ar",
+    name: "Intel: Qwen3 Coder 480B",
+    contextWindow: 106000,
+    inputPricePerToken: 2.2e-7,
+    outputPricePerToken: 9.5e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "MiniMaxAI/MiniMax-M2.5": {
+    id: "MiniMaxAI/MiniMax-M2.5",
+    name: "MiniMaxAI: MiniMax M2.5",
+    contextWindow: 196600,
+    inputPricePerToken: 1.18e-7,
+    outputPricePerToken: 9.9e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "moonshotai/Kimi-K2.5": {
+    id: "moonshotai/Kimi-K2.5",
+    name: "MoonshotAI: Kimi K2.5",
+    contextWindow: 262144,
+    inputPricePerToken: 4.45e-7,
+    outputPricePerToken: 2e-6,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "moonshotai/Kimi-K2-Instruct-0905": {
+    id: "moonshotai/Kimi-K2-Instruct-0905",
+    name: "MoonshotAI: Kimi K2 Instruct",
+    contextWindow: 262144,
+    inputPricePerToken: 3.9e-7,
+    outputPricePerToken: 1.9e-6,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "moonshotai/Kimi-K2-Thinking": {
+    id: "moonshotai/Kimi-K2-Thinking",
+    name: "MoonshotAI: Kimi K2 Thinking",
+    contextWindow: 262144,
+    inputPricePerToken: 3.2e-7,
+    outputPricePerToken: 4.8e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 8192, // reasoning model — generates more tokens
+  },
+  "deepseek-ai/DeepSeek-V3.2": {
+    id: "deepseek-ai/DeepSeek-V3.2",
+    name: "DeepSeek: V3.2",
+    contextWindow: 163840,
+    inputPricePerToken: 2.5e-7,
+    outputPricePerToken: 3.8e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "deepseek-ai/DeepSeek-R1-0528": {
+    id: "deepseek-ai/DeepSeek-R1-0528",
+    name: "DeepSeek: R1 0528",
+    contextWindow: 128000,
+    inputPricePerToken: 4e-7,
+    outputPricePerToken: 1.75e-6,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 8192, // reasoning model — generates more tokens
+  },
+  "zai-org/GLM-4.6": {
+    id: "zai-org/GLM-4.6",
+    name: "Z.ai: GLM 4.6",
+    contextWindow: 200000,
+    inputPricePerToken: 3.5e-7,
+    outputPricePerToken: 1.5e-6,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "zai-org/GLM-4.7": {
+    id: "zai-org/GLM-4.7",
+    name: "Z.ai: GLM 4.7",
+    contextWindow: 202752,
+    inputPricePerToken: 3e-7,
+    outputPricePerToken: 1.4e-6,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "zai-org/GLM-4.7-Flash": {
+    id: "zai-org/GLM-4.7-Flash",
+    name: "Z.ai: GLM 4.7 Flash",
+    contextWindow: 200000,
+    inputPricePerToken: 7e-8,
+    outputPricePerToken: 4e-7,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "zai-org/GLM-5": {
+    id: "zai-org/GLM-5",
+    name: "Z.ai: GLM 5",
+    contextWindow: 202752,
+    inputPricePerToken: 1e-6,
+    outputPricePerToken: 3e-6,
+    supportsImages: false,
+    estimatedMaxOutputTokens: 4096,
+  },
+  "mistralai/Mistral-Large-Instruct-2411": {
+    id: "mistralai/Mistral-Large-Instruct-2411",
+    name: "Mistral: Large Instruct 2411",
+    contextWindow: 128000,
+    inputPricePerToken: 2e-6,
+    outputPricePerToken: 6e-6,
+    supportsImages: true,
+    estimatedMaxOutputTokens: 4096,
+  },
+};
+
+export const DEFAULT_MODEL = "openai/gpt-oss-120b";

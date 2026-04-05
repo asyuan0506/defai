@@ -1,26 +1,194 @@
 @import "tailwindcss";
 
+/* ── Design Tokens: DeLLM DeFi Dark ──────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #080E1A;
+  --background-secondary: #0D1525;
+  --foreground: #F8FAFC;
+  --foreground-muted: #94A3B8;
+
+  --primary: #F59E0B;
+  --primary-hover: #D97706;
+  --primary-foreground: #080E1A;
+
+  --secondary: #FBBF24;
+  --secondary-foreground: #080E1A;
+
+  --accent: #8B5CF6;
+  --accent-hover: #7C3AED;
+  --accent-foreground: #FFFFFF;
+
+  --muted: #1A2438;
+  --muted-foreground: #64748B;
+
+  --surface: #111C30;
+  --surface-elevated: #192236;
+
+  --border: #1E3A5F;
+  --border-subtle: #162035;
+  --input: #1A2438;
+  --ring: #F59E0B;
+  --destructive: #EF4444;
+  --success: #10B981;
+
+  --gold-glow: 0 0 24px rgba(245, 158, 11, 0.35);
+  --purple-glow: 0 0 24px rgba(139, 92, 246, 0.35);
+  --card-shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-display: var(--font-space-grotesk), sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  border-color: var(--border);
+  box-sizing: border-box;
 }
+
+html { color-scheme: dark; }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Typography utilities ─────────────────────────────────────────── */
+.font-display { font-family: var(--font-space-grotesk), sans-serif; }
+.font-mono    { font-family: var(--font-jetbrains-mono), monospace; }
+
+/* ── Gradient text ────────────────────────────────────────────────── */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-purple {
+  background: linear-gradient(135deg, #8B5CF6 0%, #C084FC 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-hero {
+  background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 40%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Glass cards ──────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(17, 28, 48, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 58, 95, 0.5);
+}
+.glass-card-bright {
+  background: rgba(25, 34, 54, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(45, 75, 120, 0.5);
+}
+
+/* ── Glow effects ────────────────────────────────────────────────── */
+.glow-gold {
+  box-shadow: var(--gold-glow);
+}
+.glow-gold:hover {
+  box-shadow: 0 0 32px rgba(245, 158, 11, 0.55);
+}
+.glow-purple {
+  box-shadow: var(--purple-glow);
+}
+
+/* ── Feature icon container ──────────────────────────────────────── */
+.feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Animations ──────────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+.float-slow { animation: float-slow 6s ease-in-out infinite; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.15) 50%, transparent 100%);
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
+
+/* ── Stat badge ──────────────────────────────────────────────────── */
+.stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: 16px;
+}
+
+/* ── Grid dot background ─────────────────────────────────────────── */
+.grid-dots {
+  background-image:
+    radial-gradient(circle, rgba(245,158,11,0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
