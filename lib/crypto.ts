@@ -2,14 +2,14 @@
  * Client-side AES-256-GCM encryption for chat messages.
  *
  * Key derivation:
- *   HKDF-SHA-256( signatureBytes, salt="dellm-enc-v1", info="" ) → AES-256-GCM key
+ *   HKDF-SHA-256( signatureBytes, salt="defai-enc-v1", info="" ) → AES-256-GCM key
  *
- * The signing input is a fixed message ("DeLLM Chat Encryption\nWallet: <addr>"),
+ * The signing input is a fixed message ("DeFai Chat Encryption\nWallet: <addr>"),
  * so the same wallet always produces the same encryption key — no key storage needed.
  * The server never sees the key or the plaintext.
  */
 
-const ENC_SALT = new TextEncoder().encode("dellm-enc-v1");
+const ENC_SALT = new TextEncoder().encode("defai-enc-v1");
 
 /** Derive a non-extractable AES-256-GCM key from a wallet signature. */
 export async function deriveKeyFromSignature(signatureBytes: Uint8Array): Promise<CryptoKey> {

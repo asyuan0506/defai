@@ -59,7 +59,7 @@ export function WalletAuthButton() {
         : wallet;
       const { data, error: signInError } = await supabase.auth.signInWithWeb3({
         chain: "solana",
-        statement: "Login DeLLM",
+        statement: "Login DeFai",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         wallet: walletAdapter as any,
         options: { captchaToken },
@@ -76,7 +76,7 @@ export function WalletAuthButton() {
       //    This key is deterministic per wallet — same wallet, same key, forever.
       setStep("signing-enc");
       const encMessage = new TextEncoder().encode(
-        `DeLLM Chat Encryption\nWallet: ${walletAddress}`
+        `DeFai Chat Encryption\nWallet: ${walletAddress}`
       );
       const encSigBytes = await signMessage(encMessage);
       const encryptionKey = await deriveKeyFromSignature(encSigBytes);

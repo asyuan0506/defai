@@ -110,7 +110,7 @@ export default function Home() {
             <Sparkles className="h-4 w-4 text-amber-400" />
           </div>
           <span className="font-display font-bold text-xl tracking-tight text-white">
-            De<span className="text-gradient-gold">LLM</span>
+            De<span className="text-gradient-gold">Fai</span>
           </span>
         </div>
 
@@ -184,7 +184,7 @@ export default function Home() {
                   <Shield className="h-5 w-5 text-violet-400" />
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-white text-sm">進入 DeLLM</p>
+                  <p className="font-display font-semibold text-white text-sm">進入 DeFai</p>
                   <p className="text-xs text-slate-500">連接你的 Solana 錢包</p>
                 </div>
               </div>
@@ -205,8 +205,8 @@ export default function Home() {
               <div className="mt-5 space-y-2">
                 {[
                   { icon: Shield, text: "Ed25519 簽名驗證，無需密碼" },
-                  { icon: Lock,   text: "聊天內容端對端加密 (AES-256-GCM)" },
-                  { icon: Zap,    text: "Cloudflare Turnstile 防機器人保護" },
+                  { icon: Lock, text: "聊天內容端對端加密 (AES-256-GCM)" },
+                  { icon: Zap, text: "Cloudflare Turnstile 防機器人保護" },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-2 text-xs text-slate-500">
                     <Icon className="h-3.5 w-3.5 text-slate-600 shrink-0" />
@@ -314,7 +314,7 @@ export default function Home() {
         {/* ── Footer ────────────────────────────────────────────── */}
         <footer className="pb-10 border-t border-slate-800/60 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="font-display font-bold text-lg text-white opacity-40">
-            De<span className="text-gradient-gold">LLM</span>
+            De<span className="text-gradient-gold">Fai</span>
           </span>
           <p className="text-xs text-slate-600 text-center">
             Solana · Jupiter · Supabase · Cloudflare Turnstile · AES-256-GCM

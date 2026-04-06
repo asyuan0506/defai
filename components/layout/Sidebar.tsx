@@ -47,7 +47,7 @@ export function Sidebar() {
         {/* Brand header */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-[#1E3A5F]/40">
           <span className="font-display font-bold text-xl tracking-tight text-white">
-            De<span className="text-gradient-gold">LLM</span>
+            De<span className="text-gradient-gold">Fai</span>
           </span>
           {shortAddress && (
             <span className="font-mono text-[10px] text-slate-500 bg-slate-800/60 border border-slate-700/40 rounded-full px-2 py-0.5">
