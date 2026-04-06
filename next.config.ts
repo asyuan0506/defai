@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  allowedDevOrigins: ['dellm.asyuan.com'],
+  allowedDevOrigins: ['defai.asyuan.com', 'defai-omega.vercel.app'],
 };
 
 export default nextConfig;
