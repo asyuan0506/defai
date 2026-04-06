@@ -115,6 +115,7 @@ body {
 /* ── Glow effects ────────────────────────────────────────────────── */
 .glow-gold {
   box-shadow: var(--gold-glow);
+  transition: box-shadow 0.2s ease;
 }
 .glow-gold:hover {
   box-shadow: 0 0 32px rgba(245, 158, 11, 0.55);
