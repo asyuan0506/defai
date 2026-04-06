@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
         set({ token: null, refreshToken: null, walletAddress: null, isAuthenticated: false, encryptionKey: null }),
     }),
     {
-      name: "dellm-auth",
+      name: "defai-auth",
       // CryptoKey cannot be serialized — exclude from persistence
       partialize: (state) => ({
         token: state.token,

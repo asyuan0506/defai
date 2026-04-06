@@ -1,4 +1,4 @@
--- DeLLM Supabase Schema
+-- DeFai Supabase Schema
 -- Run this in the Supabase SQL Editor to set up all tables.
 
 -- ── Balances ─────────────────────────────────────────────────────────
