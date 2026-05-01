@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { loadEncryptionKey } from "@/lib/encryption-key-store";
 
 interface AuthState {
   token: string | null;          // Supabase access_token
@@ -33,13 +34,22 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "defai-auth",
-      // CryptoKey cannot be serialized — exclude from persistence
+      // CryptoKey cannot be JSON-serialized — persisted separately in IndexedDB
       partialize: (state) => ({
         token: state.token,
         refreshToken: state.refreshToken,
         walletAddress: state.walletAddress,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state?.isAuthenticated) return;
+        loadEncryptionKey()
+          .then((key) => {
+            if (key) state.setEncryptionKey(key);
+            else state.clearAuth();
+          })
+          .catch(() => state.clearAuth());
+      },
     }
   )
 );

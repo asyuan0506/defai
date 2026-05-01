@@ -5,7 +5,8 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth";
 import { deriveKeyFromSignature } from "@/lib/crypto";
-import { Wallet, LogOut, ShieldCheck } from "lucide-react";
+import { saveEncryptionKey, clearEncryptionKey } from "@/lib/encryption-key-store";
+import { Wallet, LogOut, ShieldCheck, Plug } from "lucide-react";
 import { useState, useRef } from "react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ export function WalletAuthButton() {
       const { access_token, refresh_token } = data.session;
       setAuth(access_token, refresh_token, walletAddress);
       setEncryptionKey(encryptionKey);
+      await saveEncryptionKey(encryptionKey);
       setStep("done");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "發生錯誤，請重試";
@@ -93,10 +95,35 @@ export function WalletAuthButton() {
   const handleDisconnect = async () => {
     await supabase.auth.signOut();
     disconnect();
+    await clearEncryptionKey();
     clearAuth();
     setStep("idle");
     setError(null);
   };
+
+  if (isAuthenticated && !connected) {
+    return (
+      <div className="flex gap-1.5">
+        <Button
+          onClick={() => setVisible(true)}
+          variant="secondary"
+          className="flex-1"
+        >
+          <Plug data-icon="inline-start" />
+          重新連接
+        </Button>
+        <Button
+          onClick={handleDisconnect}
+          variant="outline"
+          size="icon"
+          title="登出"
+          aria-label="登出"
+        >
+          <LogOut />
+        </Button>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return (

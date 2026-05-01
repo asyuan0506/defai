@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import {
   SystemProgram,
   PublicKey,
@@ -53,6 +54,7 @@ interface DepositModalProps {
 export function DepositModal({ open, onOpenChange }: DepositModalProps) {
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
+  const { setVisible } = useWalletModal();
   const { token } = useAuthStore();
   const { fetchBalance } = useBalanceStore();
 
@@ -79,7 +81,11 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
   };
 
   const handleDeposit = async () => {
-    if (!publicKey || !token || !TREASURY) return;
+    if (!token || !TREASURY) return;
+    if (!publicKey) {
+      setVisible(true);
+      return;
+    }
     const sol = parseFloat(amount);
     if (isNaN(sol) || sol <= 0) return;
 
@@ -275,10 +281,13 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
             </Button>
             <Button
               onClick={handleDeposit}
-              disabled={!amount || parseFloat(amount) <= 0 || isLoading}
+              disabled={
+                isLoading ||
+                (!!publicKey && (!amount || parseFloat(amount) <= 0))
+              }
             >
               {isLoading && <Spinner data-icon="inline-start" />}
-              {statusLabel[status]}
+              {!isLoading && !publicKey ? "連接錢包" : statusLabel[status]}
             </Button>
           </DialogFooter>
         )}
