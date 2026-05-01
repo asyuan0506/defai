@@ -5,19 +5,45 @@ import { useChatStore } from "@/store/chat";
 import { useAuthStore } from "@/store/auth";
 import { useBalanceStore, formatLst } from "@/store/balance";
 import {
-  MessageSquarePlus, Trash2, MessageSquare,
-  ArrowDownToLine, TrendingUp, Loader2,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarMenuAction,
+  SidebarMenuSkeleton,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DepositModal } from "@/components/wallet/DepositModal";
+import {
+  MessageSquarePlus,
+  Trash2,
+  MessageSquare,
+  ArrowDownToLine,
+  TrendingUp,
+} from "lucide-react";
 
-export function Sidebar() {
+export function AppSidebar() {
   const {
-    conversations, activeConversationId, isLoadingConversations,
-    createConversation, setActiveConversation, deleteConversation, loadConversations,
+    conversations,
+    activeConversationId,
+    isLoadingConversations,
+    createConversation,
+    setActiveConversation,
+    deleteConversation,
+    loadConversations,
   } = useChatStore();
   const { walletAddress, token } = useAuthStore();
-  const { lstLamports, lstSymbol, isLoading: balanceLoading, fetchBalance } = useBalanceStore();
+  const { lstLamports, lstSymbol, isLoading: balanceLoading, fetchBalance } =
+    useBalanceStore();
   const [showDeposit, setShowDeposit] = useState(false);
 
   const shortAddress = walletAddress
@@ -31,108 +57,131 @@ export function Sidebar() {
     }
   }, [token, fetchBalance, loadConversations]);
 
-  const handleCreate = () => {
-    createConversation();
-  };
-
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!token) return;
     await deleteConversation(token, id);
   };
 
   return (
     <>
-      <aside className="flex flex-col w-64 shrink-0 h-full bg-[#0D1626] border-r border-[#1E3A5F]/50">
-        {/* Brand header */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-[#1E3A5F]/40">
-          <span className="font-display font-bold text-xl tracking-tight text-white">
-            De<span className="text-gradient-gold">Fai</span>
-          </span>
-          {shortAddress && (
-            <span className="font-mono text-[10px] text-slate-500 bg-slate-800/60 border border-slate-700/40 rounded-full px-2 py-0.5">
-              {shortAddress}
+      <Sidebar collapsible="icon">
+        <SidebarHeader>
+          <div className="flex items-center justify-between gap-2 px-2 py-1 group-data-[collapsible=icon]:px-0">
+            <span className="font-display font-bold text-xl tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+              De<span className="text-primary">Fai</span>
             </span>
-          )}
-        </div>
-
-        {/* Balance card */}
-        <div className="mx-3 mt-4">
-          <div className="rounded-xl border border-amber-400/15 bg-amber-500/5 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-xs text-slate-400 font-medium">帳戶餘額</span>
-              </div>
-              <span className="text-[10px] text-amber-400/50 font-mono">JitoSOL</span>
-            </div>
-
-            <p className="font-mono font-semibold text-white text-base truncate mb-3">
-              {balanceLoading ? (
-                <span className="text-slate-600 text-sm animate-pulse">載入中…</span>
-              ) : (
-                formatLst(lstLamports, lstSymbol)
-              )}
-            </p>
-
-            <button
-              onClick={() => setShowDeposit(true)}
-              className="flex items-center justify-center gap-1.5 w-full rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold text-xs px-3 py-2 transition-all duration-200 cursor-pointer glow-gold"
-            >
-              <ArrowDownToLine className="h-3.5 w-3.5" />
-              儲值
-            </button>
-          </div>
-        </div>
-
-        {/* New chat button */}
-        <div className="px-3 py-3">
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 w-full rounded-lg border border-slate-700/50 bg-slate-800/30 hover:bg-slate-700/40 text-slate-300 hover:text-white px-3 py-2 text-sm font-medium transition-all duration-200 cursor-pointer"
-          >
-            <MessageSquarePlus className="h-4 w-4" />
-            新對話
-          </button>
-        </div>
-
-        {/* Conversations list */}
-        <nav className="flex-1 overflow-y-auto px-2 space-y-0.5 pb-4">
-          {isLoadingConversations ? (
-            <div className="flex items-center justify-center mt-6 gap-2 text-slate-600">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span className="text-xs">載入對話…</span>
-            </div>
-          ) : conversations.length === 0 ? (
-            <p className="text-xs text-slate-600 text-center mt-4 px-3">尚無對話記錄</p>
-          ) : (
-            conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={cn(
-                  "group flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer text-sm transition-all duration-150",
-                  conv.id === activeConversationId
-                    ? "bg-violet-500/10 border border-violet-500/20 text-violet-300"
-                    : "hover:bg-slate-800/40 text-slate-400 hover:text-slate-200 border border-transparent"
-                )}
-                onClick={() => setActiveConversation(conv.id)}
+            {shortAddress && (
+              <Badge
+                variant="secondary"
+                className="font-mono text-[10px] group-data-[collapsible=icon]:hidden"
               >
-                <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                <span className="flex-1 truncate text-xs">{conv.title}</span>
-                <button
-                  onClick={(e) => handleDelete(e, conv.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-red-400 cursor-pointer"
-                  aria-label="刪除對話"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            ))
-          )}
-        </nav>
-      </aside>
+                {shortAddress}
+              </Badge>
+            )}
+          </div>
+        </SidebarHeader>
 
-      {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
+        <SidebarContent>
+          {/* Balance card */}
+          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroupContent>
+              <Card size="sm">
+                <CardContent className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <TrendingUp className="size-3.5 text-primary" />
+                      <span className="text-xs font-medium">帳戶餘額</span>
+                    </div>
+                    <span className="text-[10px] text-primary/60 font-mono">
+                      JitoSOL
+                    </span>
+                  </div>
+
+                  {balanceLoading ? (
+                    <Skeleton className="h-5 w-24" />
+                  ) : (
+                    <p className="font-mono font-semibold text-foreground text-base truncate">
+                      {formatLst(lstLamports, lstSymbol)}
+                    </p>
+                  )}
+
+                  <Button
+                    size="sm"
+                    onClick={() => setShowDeposit(true)}
+                    className="w-full"
+                  >
+                    <ArrowDownToLine data-icon="inline-start" />
+                    儲值
+                  </Button>
+                </CardContent>
+              </Card>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator />
+
+          {/* New conversation */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => createConversation()}
+                    tooltip="新對話"
+                  >
+                    <MessageSquarePlus />
+                    <span>新對話</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Conversations list */}
+          <SidebarGroup className="flex-1 overflow-hidden">
+            <SidebarGroupLabel>對話記錄</SidebarGroupLabel>
+            <SidebarGroupContent className="overflow-y-auto">
+              {isLoadingConversations ? (
+                <SidebarMenu>
+                  <SidebarMenuSkeleton showIcon />
+                  <SidebarMenuSkeleton showIcon />
+                  <SidebarMenuSkeleton showIcon />
+                </SidebarMenu>
+              ) : conversations.length === 0 ? (
+                <div className="flex items-center justify-center py-4 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                  尚無對話記錄
+                </div>
+              ) : (
+                <SidebarMenu>
+                  {conversations.map((conv) => (
+                    <SidebarMenuItem key={conv.id}>
+                      <SidebarMenuButton
+                        isActive={conv.id === activeConversationId}
+                        onClick={() => setActiveConversation(conv.id)}
+                        tooltip={conv.title}
+                      >
+                        <MessageSquare />
+                        <span>{conv.title}</span>
+                      </SidebarMenuButton>
+                      <SidebarMenuAction
+                        showOnHover
+                        onClick={(e) => handleDelete(e, conv.id)}
+                        aria-label="刪除對話"
+                      >
+                        <Trash2 className="text-muted-foreground hover:text-destructive" />
+                      </SidebarMenuAction>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+
+      {showDeposit && <DepositModal open={showDeposit} onOpenChange={setShowDeposit} />}
     </>
   );
 }

@@ -1,16 +1,20 @@
 "use client";
 
 import { WalletAuthButton } from "@/components/wallet/WalletAuthButton";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import { Sparkles } from "lucide-react";
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between px-6 h-14 border-b border-[#1E3A5F]/40 bg-[#0D1626]/80 backdrop-blur-sm shrink-0">
-      <div className="flex items-center gap-2 text-slate-400">
-        <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card/50 px-4">
+      <SidebarTrigger />
+      <Separator orientation="vertical" className="h-5" />
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Sparkles className="size-3.5 text-primary" />
         <span className="text-sm">AI Chatbot</span>
       </div>
-      <div className="w-36">
+      <div className="ml-auto w-40">
         <WalletAuthButton />
       </div>
     </header>

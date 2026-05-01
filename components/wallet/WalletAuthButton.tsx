@@ -5,9 +5,12 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth";
 import { deriveKeyFromSignature } from "@/lib/crypto";
-import { Wallet, LogOut, Loader2, ShieldCheck } from "lucide-react";
+import { Wallet, LogOut, ShieldCheck } from "lucide-react";
 import { useState, useRef } from "react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type Step = "idle" | "signing-auth" | "signing-enc" | "done";
 
@@ -46,10 +49,7 @@ export function WalletAuthButton() {
       const captchaToken = turnstileTokenRef.current;
       if (!captchaToken) throw new Error("CAPTCHA 尚未完成，請稍候再試");
 
-      // 1. Wallet popup #1 — Supabase SIWS (Sign-In-With-Solana) flow
       setStep("signing-auth");
-      // Adapter: Supabase expects (...inputs) => Promise<Output | Output[]>
-      // but wallet-adapter provides (input?) => Promise<Output>. Cast via unknown.
       const walletAdapter = wallet.signIn
         ? {
             ...wallet,
@@ -65,15 +65,12 @@ export function WalletAuthButton() {
         options: { captchaToken },
       });
 
-      // Token is single-use — reset immediately after use
       resetTurnstile();
 
       if (signInError || !data.session) {
         throw new Error(signInError?.message ?? "Supabase 登入失敗");
       }
 
-      // 2. Wallet popup #2 — sign fixed message to derive encryption key
-      //    This key is deterministic per wallet — same wallet, same key, forever.
       setStep("signing-enc");
       const encMessage = new TextEncoder().encode(
         `DeFai Chat Encryption\nWallet: ${walletAddress}`
@@ -103,13 +100,10 @@ export function WalletAuthButton() {
 
   if (isAuthenticated) {
     return (
-      <button
-        onClick={handleDisconnect}
-        className="flex items-center justify-center gap-2 w-full rounded-xl border border-slate-700/60 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer"
-      >
-        <LogOut className="h-4 w-4" />
+      <Button onClick={handleDisconnect} variant="outline" className="w-full">
+        <LogOut data-icon="inline-start" />
         登出錢包
-      </button>
+      </Button>
     );
   }
 
@@ -121,38 +115,42 @@ export function WalletAuthButton() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex justify-center">
         <Turnstile
           ref={turnstileRef}
           siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA"}
-          onSuccess={(token: string) => { turnstileTokenRef.current = token; setCaptchaReady(true); }}
+          onSuccess={(token: string) => {
+            turnstileTokenRef.current = token;
+            setCaptchaReady(true);
+          }}
           onExpire={resetTurnstile}
           onError={resetTurnstile}
           options={{ theme: "dark", size: "normal", refreshExpired: "auto" }}
         />
       </div>
 
-      <button
+      <Button
         onClick={handleAuth}
         disabled={isLoading || isCaptchaPending}
         aria-busy={isLoading}
-        className="flex items-center justify-center gap-2 w-full rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-semibold px-4 py-2.5 text-sm transition-all duration-200 cursor-pointer glow-gold"
+        className="w-full"
+        size="lg"
       >
         {isLoading || isCaptchaPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Spinner data-icon="inline-start" />
         ) : connected ? (
-          <ShieldCheck className="h-4 w-4" />
+          <ShieldCheck data-icon="inline-start" />
         ) : (
-          <Wallet className="h-4 w-4" />
+          <Wallet data-icon="inline-start" />
         )}
         {isCaptchaPending ? "CAPTCHA 驗證中…" : stepLabel[step]}
-      </button>
+      </Button>
 
       {error && (
-        <p role="alert" className="text-xs text-red-400 text-center rounded-lg bg-red-400/5 border border-red-400/10 px-3 py-2">
-          {error}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
     </div>
   );

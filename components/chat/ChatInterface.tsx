@@ -7,7 +7,17 @@ import { encryptMessage, decryptMessage } from "@/lib/crypto";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Sparkles, Lock, Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Bot, Sparkles, Lock } from "lucide-react";
 
 interface ChatInterfaceProps {
   conversationId: string;
@@ -16,8 +26,14 @@ interface ChatInterfaceProps {
 export function ChatInterface({ conversationId }: ChatInterfaceProps) {
   const {
     conversations,
-    addMessage, appendToLastMessage, setStreaming, isStreaming,
-    loadMessages, updateConversationTitle, persistConversation, isLoadingMessages,
+    addMessage,
+    appendToLastMessage,
+    setStreaming,
+    isStreaming,
+    loadMessages,
+    updateConversationTitle,
+    persistConversation,
+    isLoadingMessages,
   } = useChatStore();
   const { token, encryptionKey } = useAuthStore();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -25,7 +41,6 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
   const conversation = conversations.find((c) => c.id === conversationId);
   const messages = conversation?.messages ?? [];
 
-  // Load encrypted messages from Supabase when conversation changes
   useEffect(() => {
     if (!token || !encryptionKey) return;
     if (conversation && conversation.messages.length === 0) {
@@ -33,7 +48,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
         decryptMessage(encryptionKey, ciphertext, iv)
       );
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, token, encryptionKey]);
 
   useEffect(() => {
@@ -43,13 +58,11 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
   const handleSend = async (text: string) => {
     if (!token) return;
 
-    // Persist conversation to DB on first message
     if (conversation && !conversation.persisted) {
       try {
         await persistConversation(token, conversationId);
       } catch (e) {
         console.error("Failed to persist conversation:", e);
-        // Continue anyway — messages won't be saved to DB but chat still works
       }
     }
 
@@ -94,7 +107,9 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
               const { delta } = JSON.parse(data);
               appendToLastMessage(conversationId, delta);
               assistantContent += delta;
-            } catch { /* skip malformed */ }
+            } catch {
+              /* skip malformed */
+            }
           }
         }
       }
@@ -106,12 +121,10 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
       setStreaming(false);
     }
 
-    // Auto-update conversation title from first message
     if (conversation && conversation.title === "新對話" && token) {
       updateConversationTitle(token, conversationId, text.slice(0, 30));
     }
 
-    // Save encrypted message pair to Supabase
     if (token && encryptionKey && assistantContent) {
       try {
         const [encUser, encAssistant] = await Promise.all([
@@ -139,42 +152,50 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
     }
   };
 
+  const presets = ["解釋 Liquid Staking", "什麼是 JitoSOL?", "DeFi yield 如何計算?"];
+
   return (
-    <div className="flex flex-col h-full bg-[#0F172A]">
-      {/* Messages */}
+    <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 overflow-y-auto py-4">
         {isLoadingMessages ? (
-          <div className="flex items-center justify-center h-64 gap-2 text-slate-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
+          <div className="flex h-64 items-center justify-center gap-2 text-muted-foreground">
+            <Spinner />
             <span className="text-sm">載入對話中…</span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-500/20">
-              <Bot className="h-7 w-7 text-violet-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-slate-300">AI 助理</p>
-              <p className="text-xs text-slate-600 mt-1">以 JitoSOL 餘額支付推理費用</p>
-              {encryptionKey && (
-                <div className="flex items-center justify-center gap-1 mt-2 text-emerald-400/70 text-[10px]">
-                  <Lock className="h-3 w-3" />
-                  端對端加密已啟用
+          <div className="flex h-full items-center justify-center p-6">
+            <Empty className="border-none">
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="bg-primary/15 text-primary size-12">
+                  <Bot className="size-6" />
+                </EmptyMedia>
+                <EmptyTitle>AI 助理</EmptyTitle>
+                <EmptyDescription>
+                  以 JitoSOL 餘額支付推理費用。
+                  {encryptionKey && (
+                    <span className="mt-2 inline-flex items-center gap-1 text-ctp-green/80">
+                      <Lock className="size-3" />
+                      端對端加密已啟用
+                    </span>
+                  )}
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {presets.map((p) => (
+                    <Button
+                      key={p}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSend(p)}
+                    >
+                      <Sparkles data-icon="inline-start" className="text-primary" />
+                      {p}
+                    </Button>
+                  ))}
                 </div>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center max-w-sm mt-2">
-              {["解釋 Liquid Staking", "什麼是 JitoSOL?", "DeFi yield 如何計算?"].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => handleSend(p)}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-700/50 hover:border-slate-600 bg-slate-800/30 hover:bg-slate-800/60 rounded-full px-3 py-1.5 transition-all duration-150 cursor-pointer"
-                >
-                  <Sparkles className="h-3 w-3 text-violet-400" />
-                  {p}
-                </button>
-              ))}
-            </div>
+              </EmptyContent>
+            </Empty>
           </div>
         ) : (
           messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
@@ -182,11 +203,10 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
         <div ref={bottomRef} />
       </ScrollArea>
 
-      {/* Input */}
-      <div className="px-4 pb-4 pt-2 border-t border-[#1E3A5F]/30">
+      <div className="border-t border-border px-4 pt-2 pb-4">
         <ChatInput onSend={handleSend} isStreaming={isStreaming} />
-        <div className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-slate-700">
-          {encryptionKey && <Lock className="h-2.5 w-2.5 text-emerald-600" />}
+        <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+          {encryptionKey && <Lock className="size-2.5 text-ctp-green/70" />}
           <span>每次推理扣除 JitoSOL 餘額 · 收益自動累積</span>
         </div>
       </div>
