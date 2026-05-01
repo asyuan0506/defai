@@ -1,72 +1,208 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-/* ── Design Tokens: DeFai DeFi Dark ──────────────────────────────── */
+@custom-variant dark (&:is(.dark *));
+
+/* ── Catppuccin Mocha — Raw Palette ──────────────────────────────── */
 :root {
-  --background: #080E1A;
-  --background-secondary: #0D1525;
-  --foreground: #F8FAFC;
-  --foreground-muted: #94A3B8;
+  --ctp-rosewater: #f5e0dc;
+  --ctp-flamingo:  #f2cdcd;
+  --ctp-pink:      #f5c2e7;
+  --ctp-mauve:     #cba6f7;
+  --ctp-red:       #f38ba8;
+  --ctp-maroon:    #eba0ac;
+  --ctp-peach:     #fab387;
+  --ctp-yellow:    #f9e2af;
+  --ctp-green:     #a6e3a1;
+  --ctp-teal:      #94e2d5;
+  --ctp-sky:       #89dceb;
+  --ctp-sapphire:  #74c7ec;
+  --ctp-blue:      #89b4fa;
+  --ctp-lavender:  #b4befe;
+  --ctp-text:      #cdd6f4;
+  --ctp-subtext1:  #bac2de;
+  --ctp-subtext0:  #a6adc8;
+  --ctp-overlay2:  #9399b2;
+  --ctp-overlay1:  #7f849c;
+  --ctp-overlay0:  #6c7086;
+  --ctp-surface2:  #585b70;
+  --ctp-surface1:  #45475a;
+  --ctp-surface0:  #313244;
+  --ctp-base:      #1e1e2e;
+  --ctp-mantle:    #181825;
+  --ctp-crust:     #11111b;
 
-  --primary: #F59E0B;
-  --primary-hover: #D97706;
-  --primary-foreground: #080E1A;
+  /* shadcn semantic tokens — mapped to Mocha */
+  --background:           var(--ctp-base);
+  --foreground:           var(--ctp-text);
+  --card:                 var(--ctp-mantle);
+  --card-foreground:      var(--ctp-text);
+  --popover:              var(--ctp-mantle);
+  --popover-foreground:   var(--ctp-text);
+  --primary:              var(--ctp-mauve);
+  --primary-foreground:   var(--ctp-base);
+  --secondary:            var(--ctp-surface0);
+  --secondary-foreground: var(--ctp-text);
+  --muted:                var(--ctp-surface0);
+  --muted-foreground:     var(--ctp-subtext0);
+  --accent:               var(--ctp-surface1);
+  --accent-foreground:    var(--ctp-text);
+  --destructive:          var(--ctp-red);
+  --destructive-foreground: var(--ctp-base);
+  --border:               var(--ctp-surface0);
+  --input:                var(--ctp-surface1);
+  --ring:                 var(--ctp-mauve);
 
-  --secondary: #FBBF24;
-  --secondary-foreground: #080E1A;
+  /* Status (extra) */
+  --success: var(--ctp-green);
+  --warning: var(--ctp-yellow);
+  --info:    var(--ctp-sapphire);
 
-  --accent: #8B5CF6;
-  --accent-hover: #7C3AED;
-  --accent-foreground: #FFFFFF;
+  /* Charts */
+  --chart-1: var(--ctp-mauve);
+  --chart-2: var(--ctp-lavender);
+  --chart-3: var(--ctp-sapphire);
+  --chart-4: var(--ctp-green);
+  --chart-5: var(--ctp-peach);
 
-  --muted: #1A2438;
-  --muted-foreground: #64748B;
+  /* Sidebar */
+  --sidebar:                       var(--ctp-mantle);
+  --sidebar-foreground:            var(--ctp-text);
+  --sidebar-primary:               var(--ctp-mauve);
+  --sidebar-primary-foreground:    var(--ctp-base);
+  --sidebar-accent:                var(--ctp-surface0);
+  --sidebar-accent-foreground:     var(--ctp-text);
+  --sidebar-border:                var(--ctp-surface0);
+  --sidebar-ring:                  var(--ctp-mauve);
 
-  --surface: #111C30;
-  --surface-elevated: #192236;
+  --radius: 0.625rem;
+}
 
-  --border: #1E3A5F;
-  --border-subtle: #162035;
-  --input: #1A2438;
-  --ring: #F59E0B;
-  --destructive: #EF4444;
-  --success: #10B981;
-
-  --gold-glow: 0 0 24px rgba(245, 158, 11, 0.35);
-  --purple-glow: 0 0 24px rgba(139, 92, 246, 0.35);
-  --card-shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
+/* Mocha is dark-only — mirror :root values for .dark variant */
+.dark {
+  --background:           var(--ctp-base);
+  --foreground:           var(--ctp-text);
+  --card:                 var(--ctp-mantle);
+  --card-foreground:      var(--ctp-text);
+  --popover:              var(--ctp-mantle);
+  --popover-foreground:   var(--ctp-text);
+  --primary:              var(--ctp-mauve);
+  --primary-foreground:   var(--ctp-base);
+  --secondary:            var(--ctp-surface0);
+  --secondary-foreground: var(--ctp-text);
+  --muted:                var(--ctp-surface0);
+  --muted-foreground:     var(--ctp-subtext0);
+  --accent:               var(--ctp-surface1);
+  --accent-foreground:    var(--ctp-text);
+  --destructive:          var(--ctp-red);
+  --destructive-foreground: var(--ctp-base);
+  --border:               var(--ctp-surface0);
+  --input:                var(--ctp-surface1);
+  --ring:                 var(--ctp-mauve);
+  --chart-1: var(--ctp-mauve);
+  --chart-2: var(--ctp-lavender);
+  --chart-3: var(--ctp-sapphire);
+  --chart-4: var(--ctp-green);
+  --chart-5: var(--ctp-peach);
+  --sidebar:                    var(--ctp-mantle);
+  --sidebar-foreground:         var(--ctp-text);
+  --sidebar-primary:            var(--ctp-mauve);
+  --sidebar-primary-foreground: var(--ctp-base);
+  --sidebar-accent:             var(--ctp-surface0);
+  --sidebar-accent-foreground:  var(--ctp-text);
+  --sidebar-border:             var(--ctp-surface0);
+  --sidebar-ring:               var(--ctp-mauve);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-card:                 var(--card);
+  --color-card-foreground:      var(--card-foreground);
+  --color-popover:              var(--popover);
+  --color-popover-foreground:   var(--popover-foreground);
+  --color-primary:              var(--primary);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-secondary:            var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), monospace;
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-destructive:          var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border:               var(--border);
+  --color-input:                var(--input);
+  --color-ring:                 var(--ring);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info:    var(--info);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar:                       var(--sidebar);
+  --color-sidebar-foreground:            var(--sidebar-foreground);
+  --color-sidebar-primary:               var(--sidebar-primary);
+  --color-sidebar-primary-foreground:    var(--sidebar-primary-foreground);
+  --color-sidebar-accent:                var(--sidebar-accent);
+  --color-sidebar-accent-foreground:     var(--sidebar-accent-foreground);
+  --color-sidebar-border:                var(--sidebar-border);
+  --color-sidebar-ring:                  var(--sidebar-ring);
+
+  /* Direct Catppuccin palette utilities (e.g. text-ctp-mauve, bg-ctp-surface0) */
+  --color-ctp-rosewater: var(--ctp-rosewater);
+  --color-ctp-flamingo:  var(--ctp-flamingo);
+  --color-ctp-pink:      var(--ctp-pink);
+  --color-ctp-mauve:     var(--ctp-mauve);
+  --color-ctp-red:       var(--ctp-red);
+  --color-ctp-maroon:    var(--ctp-maroon);
+  --color-ctp-peach:     var(--ctp-peach);
+  --color-ctp-yellow:    var(--ctp-yellow);
+  --color-ctp-green:     var(--ctp-green);
+  --color-ctp-teal:      var(--ctp-teal);
+  --color-ctp-sky:       var(--ctp-sky);
+  --color-ctp-sapphire:  var(--ctp-sapphire);
+  --color-ctp-blue:      var(--ctp-blue);
+  --color-ctp-lavender:  var(--ctp-lavender);
+  --color-ctp-text:      var(--ctp-text);
+  --color-ctp-subtext1:  var(--ctp-subtext1);
+  --color-ctp-subtext0:  var(--ctp-subtext0);
+  --color-ctp-overlay2:  var(--ctp-overlay2);
+  --color-ctp-overlay1:  var(--ctp-overlay1);
+  --color-ctp-overlay0:  var(--ctp-overlay0);
+  --color-ctp-surface2:  var(--ctp-surface2);
+  --color-ctp-surface1:  var(--ctp-surface1);
+  --color-ctp-surface0:  var(--ctp-surface0);
+  --color-ctp-base:      var(--ctp-base);
+  --color-ctp-mantle:    var(--ctp-mantle);
+  --color-ctp-crust:     var(--ctp-crust);
+
+  --font-sans:    var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-mono:    var(--font-jetbrains-mono), monospace;
   --font-display: var(--font-space-grotesk), sans-serif;
+  --font-heading: var(--font-space-grotesk), sans-serif;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /* ── Base ────────────────────────────────────────────────────────── */
-*, *::before, *::after {
-  border-color: var(--border);
-  box-sizing: border-box;
+html {
+  color-scheme: dark;
 }
 
-html { color-scheme: dark; }
-
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   font-size: 16px;
   line-height: 1.6;
@@ -74,94 +210,26 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Typography utilities ─────────────────────────────────────────── */
 .font-display { font-family: var(--font-space-grotesk), sans-serif; }
 .font-mono    { font-family: var(--font-jetbrains-mono), monospace; }
 
-/* ── Gradient text ────────────────────────────────────────────────── */
-.text-gradient-gold {
-  background: linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.text-gradient-purple {
-  background: linear-gradient(135deg, #8B5CF6 0%, #C084FC 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.text-gradient-hero {
-  background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 40%, #F59E0B 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ── Glass cards ──────────────────────────────────────────────────── */
-.glass-card {
-  background: rgba(17, 28, 48, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(30, 58, 95, 0.5);
-}
-.glass-card-bright {
-  background: rgba(25, 34, 54, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(45, 75, 120, 0.5);
-}
-
-/* ── Glow effects ────────────────────────────────────────────────── */
-.glow-gold {
-  box-shadow: var(--gold-glow);
-}
-.glow-gold:hover {
-  box-shadow: 0 0 32px rgba(245, 158, 11, 0.55);
-}
-.glow-purple {
-  box-shadow: var(--purple-glow);
-}
-
-/* ── Feature icon container ──────────────────────────────────────── */
-.feature-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  flex-shrink: 0;
-}
-
-/* ── Scrollbar ────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
+/* ── Scrollbar (Mocha) ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
+::-webkit-scrollbar-thumb {
+  background: var(--ctp-surface1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ctp-surface2);
+}
 
-/* ── Animations ──────────────────────────────────────────────────── */
+/* ── Animations (kept) ───────────────────────────────────────────── */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.85); }
+  50%      { opacity: 0.5; transform: scale(0.85); }
 }
 .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-12px); }
-}
-.float-slow { animation: float-slow 6s ease-in-out infinite; }
-
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-.shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.15) 50%, transparent 100%);
-  background-size: 200% auto;
-  animation: shimmer 3s linear infinite;
-}
 
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(16px); }
@@ -169,26 +237,77 @@ body {
 }
 .fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
 
-/* ── Stat badge ──────────────────────────────────────────────────── */
-.stat-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 20px;
-  border-radius: 16px;
-}
-
-/* ── Grid dot background ─────────────────────────────────────────── */
-.grid-dots {
-  background-image:
-    radial-gradient(circle, rgba(245,158,11,0.12) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
-/* ── Reduced motion ──────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Solana wallet-adapter modal — Mocha overrides ───────────────── */
+.wallet-adapter-modal-wrapper {
+  background: var(--ctp-mantle) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
+}
+.wallet-adapter-modal-overlay {
+  background: rgba(17, 17, 27, 0.7) !important;
+  backdrop-filter: blur(4px);
+}
+.wallet-adapter-modal-title {
+  color: var(--ctp-text) !important;
+  font-family: var(--font-space-grotesk), sans-serif !important;
+}
+.wallet-adapter-modal-list {
+  margin: 0 !important;
+}
+.wallet-adapter-modal-list li {
+  background: var(--ctp-surface0) !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+.wallet-adapter-modal-list li:hover {
+  background: var(--ctp-surface1) !important;
+  border-color: var(--ctp-mauve) !important;
+}
+.wallet-adapter-button {
+  background: transparent !important;
+  color: var(--ctp-text) !important;
+}
+.wallet-adapter-button:not([disabled]):hover {
+  background: transparent !important;
+}
+.wallet-adapter-button-trigger {
+  background: var(--ctp-mauve) !important;
+  color: var(--ctp-base) !important;
+  font-family: var(--font-inter), sans-serif !important;
+  border-radius: 0.5rem !important;
+}
+.wallet-adapter-button-trigger:not([disabled]):hover {
+  background: var(--ctp-lavender) !important;
+}
+.wallet-adapter-modal-list-more {
+  color: var(--ctp-subtext0) !important;
+}
+.wallet-adapter-modal-button-close {
+  background: var(--ctp-surface0) !important;
+}
+.wallet-adapter-modal-button-close:hover {
+  background: var(--ctp-surface1) !important;
+}
+.wallet-adapter-modal-button-close svg {
+  fill: var(--ctp-subtext0) !important;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }

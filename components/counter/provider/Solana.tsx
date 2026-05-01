@@ -1,15 +1,12 @@
 "use client";
 
-import React, { FC, ReactNode, useMemo } from "react";
+import React, { FC, ReactNode, useCallback } from "react";
 import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
+import type { WalletError } from "@solana/wallet-adapter-base";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 // Set NEXT_PUBLIC_SOLANA_RPC_URL in .env to target a specific cluster.
@@ -22,14 +19,17 @@ interface SolanaProviderProps {
 }
 
 export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
-  const wallets = useMemo(
-    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
-    []
-  );
+  // autoConnect commonly fails after a browser restart because the wallet
+  // requires a user gesture to re-approve. The user can click connect again
+  // when they actually need to sign — silence the noise.
+  const onError = useCallback((error: WalletError) => {
+    if (error.name === "WalletConnectionError") return;
+    console.error("[wallet]", error);
+  }, []);
 
   return (
     <ConnectionProvider endpoint={RPC_URL}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={[]} autoConnect onError={onError}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
