@@ -3,9 +3,9 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { verifyToken } from "@/lib/auth";
 import { swapSolToLST } from "@/lib/jupiter";
 import { db } from "@/lib/db";
+import { RPC_URL } from "@/lib/network";
 
 const TREASURY = process.env.NEXT_PUBLIC_TREASURY_WALLET!;
-const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");

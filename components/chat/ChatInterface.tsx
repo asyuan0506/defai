@@ -94,22 +94,29 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = "";
 
-      while (true) {
+      outer: while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        for (const line of chunk.split("\n")) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") break;
-            try {
-              const { delta } = JSON.parse(data);
+        // Buffer across chunk boundaries — an SSE event can split mid-line,
+        // and JSON.parse on a half-line silently drops the delta.
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") break outer;
+          try {
+            const { delta } = JSON.parse(data);
+            if (delta) {
               appendToLastMessage(conversationId, delta);
               assistantContent += delta;
-            } catch {
-              /* skip malformed */
             }
+          } catch {
+            /* skip malformed */
           }
         }
       }

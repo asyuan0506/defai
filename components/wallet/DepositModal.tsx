@@ -41,6 +41,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Coins, ExternalLink, TrendingUp, ArrowDownToLine } from "lucide-react";
+import { NETWORK_LABEL, IS_MAINNET } from "@/lib/network";
 
 const TREASURY = process.env.NEXT_PUBLIC_TREASURY_WALLET!;
 
@@ -242,7 +243,10 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">網路</span>
-                  <span className="text-ctp-green">Devnet (測試)</span>
+                  <span className={IS_MAINNET ? "text-primary" : "text-ctp-green"}>
+                    {NETWORK_LABEL}
+                    {!IS_MAINNET && " (測試)"}
+                  </span>
                 </div>
               </div>
             </Field>

@@ -7,9 +7,9 @@ import { WalletAuthButton } from "@/components/wallet/WalletAuthButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Zap, Shield, Lock, Code2, Sparkles } from "lucide-react";
+import { Shield, Code2, Sparkles } from "lucide-react";
+import { NETWORK_LABEL, IS_MAINNET } from "@/lib/network";
 
 export default function Home() {
   const router = useRouter();
@@ -52,8 +52,11 @@ export default function Home() {
 
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="gap-1.5">
-              <span aria-hidden="true" className="size-1.5 rounded-full bg-ctp-green pulse-dot" />
-              Devnet
+              <span
+                aria-hidden="true"
+                className={`size-1.5 rounded-full pulse-dot ${IS_MAINNET ? "bg-primary" : "bg-ctp-green"}`}
+              />
+              {NETWORK_LABEL}
             </Badge>
             <Button asChild variant="ghost" size="icon-sm" aria-label="GitHub 原始碼">
               <a href="https://github.com" target="_blank" rel="noopener noreferrer">

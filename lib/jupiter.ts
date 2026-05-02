@@ -1,5 +1,6 @@
 import { Keypair, VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
+import { IS_MAINNET, NETWORK } from "./network";
 
 const BASE = "https://api.jup.ag";
 
@@ -13,8 +14,7 @@ export const LST_SYMBOL = "JitoSOL";
 // 1 SOL ≈ 0.93 JitoSOL (approximate exchange rate for simulation).
 const MOCK_RATE = 0.93;
 
-const NETWORK = process.env.SOLANA_NETWORK ?? "mainnet-beta";
-export const IS_MAINNET = NETWORK === "mainnet-beta";
+export { IS_MAINNET };
 
 async function jupiterFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const apiKey = process.env.JUPITER;
@@ -115,10 +115,18 @@ export async function swapSolToLST(lamports: bigint): Promise<SwapResult> {
     });
   }
 
+  // Refuse to credit a 0-LST swap to the user's balance — that would mean
+  // their SOL was taken but no JitoSOL produced.
+  if (!result.outputAmountResult || result.outputAmountResult === "0") {
+    throw new Error(
+      `Swap returned no output amount (signature: ${result.signature}) — refusing to credit 0 LST`
+    );
+  }
+
   return {
     signature: result.signature,
     inputLamports: BigInt(result.inputAmountResult ?? lamports.toString()),
-    outputLamports: BigInt(result.outputAmountResult ?? "0"),
+    outputLamports: BigInt(result.outputAmountResult),
     mocked: false,
   };
 }

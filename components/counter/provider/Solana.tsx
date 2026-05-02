@@ -7,12 +7,8 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import type { WalletError } from "@solana/wallet-adapter-base";
+import { RPC_URL } from "@/lib/network";
 import "@solana/wallet-adapter-react-ui/styles.css";
-
-// Set NEXT_PUBLIC_SOLANA_RPC_URL in .env to target a specific cluster.
-// Default: mainnet-beta (required for real LST swaps via Jupiter).
-const RPC_URL =
-  process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
 
 interface SolanaProviderProps {
   children: ReactNode;
