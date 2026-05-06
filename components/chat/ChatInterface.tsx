@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useChatStore } from "@/store/chat";
 import { useAuthStore } from "@/store/auth";
+import { useBalanceStore } from "@/store/balance";
 import { encryptMessage, decryptMessage } from "@/lib/crypto";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
@@ -126,6 +127,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
       assistantContent = "[錯誤：無法取得回應]";
     } finally {
       setStreaming(false);
+      useBalanceStore.getState().fetchBalance(token);
     }
 
     if (conversation && conversation.title === "新對話" && token) {

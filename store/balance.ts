@@ -38,6 +38,6 @@ export function formatLst(lamports: string, symbol: string): string {
   const raw = BigInt(lamports);
   const whole = raw / BigInt(10 ** LST_DECIMALS);
   const frac = raw % BigInt(10 ** LST_DECIMALS);
-  const fracStr = frac.toString().padStart(LST_DECIMALS, "0").slice(0, 4); // 4 decimal places
+  const fracStr = frac.toString().padStart(LST_DECIMALS, "0").slice(0, 8); // 8 decimal places
   return `${whole}.${fracStr} ${symbol}`;
 }
