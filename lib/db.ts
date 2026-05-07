@@ -44,15 +44,20 @@ export const db = {
     return data as boolean;
   },
 
-  async markProcessed(signature: string, wallet: string): Promise<void> {
+  /**
+   * Atomically claim a signature for processing. Returns true if this caller
+   * won the race (row inserted), false if the signature was already marked
+   * by another in-flight or prior request. Caller MUST abort the credit flow
+   * when this returns false — otherwise the same deposit can be credited twice.
+   */
+  async markProcessed(signature: string, wallet: string): Promise<boolean> {
     const supabase = createAdminSupabase();
     const { error } = await supabase
       .from("processed_signatures")
       .insert({ signature, wallet_address: wallet });
-    if (error && error.code !== "23505") {
-      // 23505 = unique_violation — already processed, that's fine
-      throw new Error(`markProcessed failed: ${error.message}`);
-    }
+    if (!error) return true;
+    if (error.code === "23505") return false; // Key constraint violation (Duplicate key)
+    throw new Error(`markProcessed failed: ${error.message}`);
   },
 
   async unmarkProcessed(signature: string): Promise<void> {
