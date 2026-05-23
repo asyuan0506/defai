@@ -6,33 +6,17 @@ import { db } from "@/lib/db";
 
 const IO_NET_BASE = process.env.IO_NET_BASE;
 
-/**
- * Token estimator — needed because io.net charges per token but pre-deduct
- * happens before we have a real count. ASCII text averages ~3.5 chars/token,
- * but CJK characters are typically 1–1.5 tokens *each*. A naive `chars / 3.5`
- * underestimates Chinese/Japanese input by 4–5×, letting low-balance users
- * effectively run inference for free.
- */
-function estimateTokens(text: string): number {
-  let cjk = 0;
-  let other = 0;
-  for (const ch of text) {
-    const code = ch.codePointAt(0)!;
-    if (
-      (code >= 0x3040 && code <= 0x30ff) || // Hiragana, Katakana
-      (code >= 0x3400 && code <= 0x4dbf) || // CJK Ext A
-      (code >= 0x4e00 && code <= 0x9fff) || // CJK Unified
-      (code >= 0xac00 && code <= 0xd7af) || // Hangul syllables
-      (code >= 0xf900 && code <= 0xfaff) || // CJK Compatibility
-      (code >= 0x20000 && code <= 0x2ffff)  // CJK Ext B–F
-    ) {
-      cjk++;
-    } else {
-      other++;
-    }
-  }
-  return Math.ceil(cjk * 1.2 + other / 3.5);
-}
+/** Per-request pre-deduct ceiling, in tokens. Both input and output are
+ *  reserved at this amount; the refund path returns the unused portion once
+ *  io.net reports the real usage. 1M is well above any realistic single-turn
+ *  consumption, so the refund will almost always cover most of the pre-deduct. */
+const PREDEDUCT_CEILING_TOKENS = 1_000_000;
+
+/** Fallback charge when usage is missing (client cancel, network error, no
+ *  final SSE chunk). Equivalent to ~one short paragraph of output at the
+ *  model's outputPricePerToken — small but non-zero so cancelling mid-stream
+ *  isn't a free-chat exploit. */
+const FALLBACK_OUTPUT_TOKENS = 512;
 
 export async function POST(req: Request) {
   // ── Auth ──────────────────────────────────────────────────────────────
@@ -63,8 +47,12 @@ export async function POST(req: Request) {
   }
 
   // ── Pre-deduct billing ────────────────────────────────────────────────
-  // Estimate: input tokens from char count + worst-case output tokens.
-  // The same jitoSOLPrice is reused for the post-refund to avoid price
+  // Reserve the per-model worst-case ceiling (1M input + 1M output tokens).
+  // The deduct_balance RPC takes a row lock, so concurrent requests serialize
+  // and can't collectively overdraw. The number of in-flight chats a single
+  // user can sustain is therefore `floor(balance / (1M+1M-token-cost))` — a
+  // hard cap that prevents the "spawn N parallel chats" exploit.
+  // The same jitoSOLPrice is reused for the post-settle refund to avoid price
   // fluctuation creating inconsistencies within a single request.
   let jitoSOLPrice: number;
   try {
@@ -73,13 +61,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Price fetch failed: ${e?.message}` }, { status: 503 });
   }
 
-  const estimatedInputTokens = messages.reduce(
-    (acc: number, m: { content: string }) => acc + estimateTokens(m.content ?? ""),
-    0
-  );
   const maxCostUSD =
-    estimatedInputTokens * modelInfo.inputPricePerToken +
-    modelInfo.estimatedMaxOutputTokens * modelInfo.outputPricePerToken;
+    PREDEDUCT_CEILING_TOKENS * modelInfo.inputPricePerToken +
+    PREDEDUCT_CEILING_TOKENS * modelInfo.outputPricePerToken;
   const maxCostLamports = usdToLamports(maxCostUSD, jitoSOLPrice);
 
   const sufficient = await db.deductBalance(user.walletAddress, maxCostLamports);
@@ -101,11 +85,6 @@ export async function POST(req: Request) {
         stream: true,
         stream_options: { include_usage: true }, // ask for token usage in final chunk
         messages: [
-          {
-            role: "system",
-            content:
-              "You are Decentralize LLM, a helpful AI assistant on a Web3 platform. Be helpful, concise, and friendly.",
-          },
           ...messages.map((m: { role: string; content: string }) => ({
             role: m.role,
             content: m.content,
@@ -147,8 +126,18 @@ export async function POST(req: Request) {
     settled = true;
 
     if (streamErrored || !usageCapture) {
-      // No reliable usage data — refund the full pre-deduct.
-      db.addBalance(user.walletAddress, maxCostLamports).catch(console.error);
+      // No reliable usage (client cancel, upstream error, missing final chunk).
+      // Don't refund everything — otherwise cancelling mid-stream after reading
+      // some output would be free. Charge a flat fallback minimum equivalent
+      // to FALLBACK_OUTPUT_TOKENS at the model's outputPrice.
+      const fallbackCostUSD = FALLBACK_OUTPUT_TOKENS * modelInfo.outputPricePerToken;
+      const rawFallbackLamports = usdToLamports(fallbackCostUSD, jitoSOLPrice);
+      const fallbackLamports =
+        rawFallbackLamports > maxCostLamports ? maxCostLamports : rawFallbackLamports;
+      const refund = maxCostLamports - fallbackLamports;
+      if (refund > 0n) {
+        db.addBalance(user.walletAddress, refund).catch(console.error);
+      }
       return;
     }
 

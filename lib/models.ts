@@ -5,15 +5,15 @@ export interface ModelInfo {
   inputPricePerToken: number;       // USD per token
   outputPricePerToken: number;      // USD per token
   supportsImages: boolean;
-  estimatedMaxOutputTokens: number; // conservative estimate for pre-deduct billing
 }
 
 // Prices and capabilities sourced from io.net /v1/models API (2026-05-23).
 // Update when io.net adds/removes models or changes pricing.
 //
-// Conservative estimatedMaxOutputTokens defaults to 4096; bumped to 8192 only
-// for explicit reasoning/thinking models that habitually generate long traces,
-// since this number is pre-deducted from the user's balance before streaming.
+// Billing uses a fixed 1M-input + 1M-output ceiling per request as the
+// pre-deduct (see app/api/chat/route.ts); the actual charge is computed from
+// io.net's reported usage in the final SSE chunk (stream_options.include_usage).
+// No client-side token estimation.
 export const MODEL_CATALOG: Record<string, ModelInfo> = {
   // ── OpenAI ─────────────────────────────────────────────────────────
   "openai/gpt-oss-20b": {
@@ -23,7 +23,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 7.3e-8,
     outputPricePerToken: 2.5e-7,
     supportsImages: false,
-    estimatedMaxOutputTokens: 2048,
   },
   "openai/gpt-oss-120b": {
     id: "openai/gpt-oss-120b",
@@ -32,7 +31,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 1.82e-7,
     outputPricePerToken: 7.9e-7,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── DeepSeek ───────────────────────────────────────────────────────
@@ -43,7 +41,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 1.46e-7,
     outputPricePerToken: 2.94e-7,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "deepseek-ai/DeepSeek-V4-Pro": {
     id: "deepseek-ai/DeepSeek-V4-Pro",
@@ -52,7 +49,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 1.778e-6,
     outputPricePerToken: 3.6832e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 8192,
   },
   "deepseek-ai/DeepSeek-V3.2": {
     id: "deepseek-ai/DeepSeek-V3.2",
@@ -61,7 +57,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 9.399e-7,
     outputPricePerToken: 1.8383e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "deepseek-ai/DeepSeek-R1-0528": {
     id: "deepseek-ai/DeepSeek-R1-0528",
@@ -70,7 +65,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 5.625e-7,
     outputPricePerToken: 2.245e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 8192, // reasoning model — generates more tokens
   },
 
   // ── Qwen ───────────────────────────────────────────────────────────
@@ -81,7 +75,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 1.8624e-7,
     outputPricePerToken: 1.20305e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "Qwen/Qwen3.6-27B": {
     id: "Qwen/Qwen3.6-27B",
@@ -90,7 +83,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 4.376e-7,
     outputPricePerToken: 3.02e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "Qwen/Qwen3-Next-80B-A3B-Instruct": {
     id: "Qwen/Qwen3-Next-80B-A3B-Instruct",
@@ -99,7 +91,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 1.175e-7,
     outputPricePerToken: 1.136e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "Intel/Qwen3-Coder-480B-A35B-Instruct-int4-mixed-ar": {
     id: "Intel/Qwen3-Coder-480B-A35B-Instruct-int4-mixed-ar",
@@ -108,7 +99,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 8.55e-7,
     outputPricePerToken: 2.695e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── MoonshotAI ─────────────────────────────────────────────────────
@@ -119,7 +109,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 9.94e-7,
     outputPricePerToken: 4.12e-6,
     supportsImages: true,
-    estimatedMaxOutputTokens: 4096,
   },
   "moonshotai/Kimi-K2.5": {
     id: "moonshotai/Kimi-K2.5",
@@ -128,7 +117,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 5.22e-7,
     outputPricePerToken: 2.69e-6,
     supportsImages: true,
-    estimatedMaxOutputTokens: 4096,
   },
   "moonshotai/Kimi-K2-Thinking": {
     id: "moonshotai/Kimi-K2-Thinking",
@@ -137,7 +125,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 6e-7,
     outputPricePerToken: 2.5e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 8192, // reasoning model — generates more tokens
   },
   "moonshotai/Kimi-K2-Instruct-0905": {
     id: "moonshotai/Kimi-K2-Instruct-0905",
@@ -146,7 +133,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 5.7e-7,
     outputPricePerToken: 2.3e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── MiniMax ────────────────────────────────────────────────────────
@@ -157,7 +143,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 4.158e-7,
     outputPricePerToken: 1.68e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "MiniMaxAI/MiniMax-M2.5": {
     id: "MiniMaxAI/MiniMax-M2.5",
@@ -166,7 +151,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 3e-7,
     outputPricePerToken: 1.2e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── Z.ai (GLM) ─────────────────────────────────────────────────────
@@ -177,7 +161,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 1.31e-6,
     outputPricePerToken: 4.2e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "zai-org/GLM-5": {
     id: "zai-org/GLM-5",
@@ -186,7 +169,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 9.2e-7,
     outputPricePerToken: 2.976e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "zai-org/GLM-4.7": {
     id: "zai-org/GLM-4.7",
@@ -195,7 +177,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 8.9e-7,
     outputPricePerToken: 2.4e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "zai-org/GLM-4.7-Flash": {
     id: "zai-org/GLM-4.7-Flash",
@@ -204,7 +185,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 7.2625e-8,
     outputPricePerToken: 4.075e-7,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "zai-org/GLM-4.6": {
     id: "zai-org/GLM-4.6",
@@ -213,7 +193,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 8.5e-7,
     outputPricePerToken: 2.75e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── Meta Llama ─────────────────────────────────────────────────────
@@ -224,7 +203,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 3.5e-7,
     outputPricePerToken: 1.0625e-6,
     supportsImages: true,
-    estimatedMaxOutputTokens: 4096,
   },
   "meta-llama/Llama-3.3-70B-Instruct": {
     id: "meta-llama/Llama-3.3-70B-Instruct",
@@ -233,7 +211,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 6.066e-7,
     outputPricePerToken: 1.0386e-6,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "meta-llama/Llama-3.2-90B-Vision-Instruct": {
     id: "meta-llama/Llama-3.2-90B-Vision-Instruct",
@@ -242,7 +219,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 2.45e-7,
     outputPricePerToken: 2.45e-7,
     supportsImages: true,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── Mistral ────────────────────────────────────────────────────────
@@ -253,7 +229,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 5.75e-8,
     outputPricePerToken: 9.75e-8,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
   "mistralai/Mistral-Large-Instruct-2411": {
     id: "mistralai/Mistral-Large-Instruct-2411",
@@ -262,7 +237,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 2e-6,
     outputPricePerToken: 6e-6,
     supportsImages: true,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── Google ─────────────────────────────────────────────────────────
@@ -273,7 +247,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 1.205e-7,
     outputPricePerToken: 4.28e-7,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
 
   // ── Baidu ──────────────────────────────────────────────────────────
@@ -286,7 +259,6 @@ export const MODEL_CATALOG: Record<string, ModelInfo> = {
     inputPricePerToken: 0,
     outputPricePerToken: 0,
     supportsImages: false,
-    estimatedMaxOutputTokens: 4096,
   },
 };
 
