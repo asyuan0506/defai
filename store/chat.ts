@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { DEFAULT_MODEL, MODEL_CATALOG } from "@/lib/models";
+import { useModelStore } from "./model";
 
 export interface Message {
   id: string;
@@ -10,6 +12,7 @@ export interface Message {
 export interface Conversation {
   id: string;
   title: string;
+  modelId: string;
   messages: Message[];
   createdAt: number;
   /** false = local only, not yet written to DB */
@@ -27,7 +30,7 @@ interface ChatState {
   loadMessages: (token: string, conversationId: string, decryptFn: (c: string, iv: string) => Promise<string>) => Promise<void>;
 
   /** Create a local-only conversation. Does NOT call the API. */
-  createConversation: () => string;
+  createConversation: (modelId?: string) => string;
   /** Persist a local conversation to DB. Throws on failure. */
   persistConversation: (token: string, conversationId: string) => Promise<void>;
 
@@ -39,6 +42,7 @@ interface ChatState {
 
   deleteConversation: (token: string, id: string) => Promise<void>;
   updateConversationTitle: (token: string, id: string, title: string) => Promise<void>;
+  setConversationModel: (token: string | null, id: string, modelId: string) => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -59,6 +63,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const mapped: Conversation[] = conversations.map((c: any) => ({
         id: c.id,
         title: c.title,
+        modelId: MODEL_CATALOG[c.model_id] ? c.model_id : DEFAULT_MODEL,
         messages: [],
         createdAt: new Date(c.created_at).getTime(),
         persisted: true,
@@ -105,11 +110,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  createConversation: () => {
+  createConversation: (modelId) => {
     const id = crypto.randomUUID();
+    // Seed new conversation with the user's last-used model so they don't
+    // have to re-pick after every "New chat" click.
+    const resolvedModelId =
+      modelId && MODEL_CATALOG[modelId]
+        ? modelId
+        : useModelStore.getState().lastUsedModelId;
     const conv: Conversation = {
       id,
       title: "新對話",
+      modelId: resolvedModelId,
       messages: [],
       createdAt: Date.now(),
       persisted: false,
@@ -125,7 +137,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const res = await fetch("/api/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id: conv.id, title: conv.title }),
+      body: JSON.stringify({ id: conv.id, title: conv.title, modelId: conv.modelId }),
     });
     if (!res.ok) throw new Error("Failed to persist conversation");
 
@@ -196,5 +208,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((s) => ({
       conversations: s.conversations.map((c) => (c.id === id ? { ...c, title } : c)),
     }));
+  },
+
+  setConversationModel: async (token, id, modelId) => {
+    if (!MODEL_CATALOG[modelId]) return;
+
+    // Optimistic local update first — picker should feel instant even before
+    // the PATCH round-trips.
+    set((s) => ({
+      conversations: s.conversations.map((c) => (c.id === id ? { ...c, modelId } : c)),
+    }));
+    // Remember as the default for future new conversations.
+    useModelStore.getState().setLastUsedModel(modelId);
+
+    const conv = get().conversations.find((c) => c.id === id);
+    if (conv?.persisted && token) {
+      await fetch("/api/conversations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, modelId }),
+      });
+    }
   },
 }));

@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   id             TEXT    PRIMARY KEY,
   wallet_address TEXT    NOT NULL,
   title          TEXT    NOT NULL DEFAULT '新對話',
+  model_id       TEXT    NOT NULL DEFAULT 'openai/gpt-oss-120b',
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 
