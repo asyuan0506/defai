@@ -11,8 +11,8 @@ export const LST_MINT = "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn";
 export const LST_SYMBOL = "JitoSOL";
 
 // On devnet/testnet there is no real JitoSOL, so we simulate the swap.
-// 1 SOL ≈ 0.93 JitoSOL (approximate exchange rate for simulation).
-const MOCK_RATE = 0.93;
+// 1 SOL ≈ 0.78 JitoSOL (approximate exchange rate for simulation).
+const MOCK_RATE = 0.78;
 
 export { IS_MAINNET };
 
@@ -67,10 +67,10 @@ export async function swapSolToLST(lamports: bigint): Promise<SwapResult> {
     return mockSwap(lamports);
   }
 
-  const jupiterPrivateKey = process.env.JUPITER_PRIVATE_KEY;
-  if (!jupiterPrivateKey) throw new Error("Missing JUPITER_PRIVATE_KEY env var");
+  const treasurySecret = process.env.TREASURY_WALLET_PRIVATE_KEY;
+  if (!treasurySecret) throw new Error("Missing TREASURY_WALLET_PRIVATE_KEY env var");
 
-  const treasury = Keypair.fromSecretKey(bs58.decode(jupiterPrivateKey));
+  const treasury = Keypair.fromSecretKey(bs58.decode(treasurySecret));
 
   // 1. Get order
   const params = new URLSearchParams({

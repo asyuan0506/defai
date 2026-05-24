@@ -23,11 +23,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DepositModal } from "@/components/wallet/DepositModal";
+import { WithdrawalModal } from "@/components/wallet/WithdrawalModal";
 import {
   MessageSquarePlus,
   Trash2,
   MessageSquare,
   ArrowDownToLine,
+  ArrowUpFromLine,
   TrendingUp,
 } from "lucide-react";
 
@@ -45,6 +47,7 @@ export function AppSidebar() {
   const { lstLamports, lstSymbol, isLoading: balanceLoading, fetchBalance } =
     useBalanceStore();
   const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
 
   const shortAddress = walletAddress
     ? `${walletAddress.slice(0, 4)}…${walletAddress.slice(-4)}`
@@ -107,14 +110,20 @@ export function AppSidebar() {
                     </p>
                   )}
 
-                  <Button
-                    size="sm"
-                    onClick={() => setShowDeposit(true)}
-                    className="w-full"
-                  >
-                    <ArrowDownToLine data-icon="inline-start" />
-                    儲值
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button size="sm" onClick={() => setShowDeposit(true)}>
+                      <ArrowDownToLine data-icon="inline-start" />
+                      儲值
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowWithdraw(true)}
+                    >
+                      <ArrowUpFromLine data-icon="inline-start" />
+                      提款
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </SidebarGroupContent>
@@ -182,6 +191,9 @@ export function AppSidebar() {
       </Sidebar>
 
       {showDeposit && <DepositModal open={showDeposit} onOpenChange={setShowDeposit} />}
+      {showWithdraw && (
+        <WithdrawalModal open={showWithdraw} onOpenChange={setShowWithdraw} />
+      )}
     </>
   );
 }

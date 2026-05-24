@@ -239,7 +239,9 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">輸出</span>
-                  <span className="text-primary">JitoSOL (~0.93x)</span>
+                  <span className="text-primary">
+                    {IS_MAINNET ? "JitoSOL (依 Jupiter 即時報價)" : "JitoSOL (~0.78 模擬)"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">網路</span>
