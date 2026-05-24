@@ -7,7 +7,7 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import type { WalletError } from "@solana/wallet-adapter-base";
-import { RPC_URL } from "@/lib/network";
+import { PUBLIC_RPC_URL } from "@/lib/network";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 interface SolanaProviderProps {
@@ -24,7 +24,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   }, []);
 
   return (
-    <ConnectionProvider endpoint={RPC_URL}>
+    <ConnectionProvider endpoint={PUBLIC_RPC_URL}>
       <WalletProvider wallets={[]} autoConnect onError={onError}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>

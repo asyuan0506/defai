@@ -73,11 +73,17 @@ export async function swapSolToLST(lamports: bigint): Promise<SwapResult> {
   const treasury = Keypair.fromSecretKey(bs58.decode(treasurySecret));
 
   // 1. Get order
+  // slippageBps caps how far Jupiter is allowed to underdeliver vs the quoted
+  // route. 50bps (0.5%) is a sensible default for JitoSOL — a deep-liquidity
+  // LST — and bounds the worst-case credit the user can receive on a single
+  // deposit. Tighten if you start seeing route rejections; loosen for less
+  // liquid pairs.
   const params = new URLSearchParams({
     inputMint: SOL_MINT,
     outputMint: LST_MINT,
     amount: lamports.toString(),
     taker: treasury.publicKey.toBase58(),
+    slippageBps: "50",
   });
 
   const order = await jupiterFetch<{

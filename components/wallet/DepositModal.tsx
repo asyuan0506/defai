@@ -97,7 +97,16 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
     try {
       const lamports = Math.floor(sol * LAMPORTS_PER_SOL);
 
-      const tx = new Transaction().add(
+      // Pre-fetch blockhash so the same one is used for build + confirm.
+      // The strategy-object confirmTransaction below requires a known
+      // lastValidBlockHeight; the deprecated single-arg form would otherwise
+      // hang until RPC timeout when the blockhash expires.
+      const latest = await connection.getLatestBlockhash("confirmed");
+
+      const tx = new Transaction({
+        recentBlockhash: latest.blockhash,
+        feePayer: publicKey,
+      }).add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: new PublicKey(TREASURY),
@@ -108,7 +117,14 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
       const signature = await sendTransaction(tx, connection);
       setStatus("confirming");
 
-      await connection.confirmTransaction(signature, "confirmed");
+      await connection.confirmTransaction(
+        {
+          signature,
+          blockhash: latest.blockhash,
+          lastValidBlockHeight: latest.lastValidBlockHeight,
+        },
+        "confirmed"
+      );
       setStatus("swapping");
 
       const res = await fetch("/api/deposit/confirm", {

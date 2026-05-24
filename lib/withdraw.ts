@@ -61,11 +61,21 @@ export async function sendJitoSolToUser(
   const treasury = loadTreasury();
   const userPubkey = new PublicKey(wallet);
 
+  // Capture blockhash + lastValidBlockHeight up-front so confirmTransaction
+  // can be called with the strategy-object form. The single-arg overload is
+  // deprecated and hangs until RPC timeout when the blockhash expires —
+  // the strategy form fail-fasts at ~150 slots (~60s) which keeps the
+  // serverless function from idling on a dead tx.
+  const latest = await connection.getLatestBlockhash("confirmed");
+
   if (!IS_MAINNET) {
     // Mock path — JitoSOL doesn't exist on devnet/testnet. Treasury sends real
     // SOL equivalent so the user gets *something* observable on-chain.
     const solLamports = BigInt(Math.floor(Number(lstLamports) / MOCK_RATE));
-    const tx = new Transaction().add(
+    const tx = new Transaction({
+      recentBlockhash: latest.blockhash,
+      feePayer: treasury.publicKey,
+    }).add(
       SystemProgram.transfer({
         fromPubkey: treasury.publicKey,
         toPubkey: userPubkey,
@@ -74,7 +84,14 @@ export async function sendJitoSolToUser(
     );
     const sig = await connection.sendTransaction(tx, [treasury]);
     try {
-      await connection.confirmTransaction(sig, "confirmed");
+      await connection.confirmTransaction(
+        {
+          signature: sig,
+          blockhash: latest.blockhash,
+          lastValidBlockHeight: latest.lastValidBlockHeight,
+        },
+        "confirmed"
+      );
     } catch (e) {
       throw Object.assign(
         e instanceof Error ? e : new Error(String(e)),
@@ -88,7 +105,10 @@ export async function sendJitoSolToUser(
   const treasuryAta = getAssociatedTokenAddressSync(LST_MINT_PUBKEY, treasury.publicKey);
   const userAta = getAssociatedTokenAddressSync(LST_MINT_PUBKEY, userPubkey);
 
-  const tx = new Transaction();
+  const tx = new Transaction({
+    recentBlockhash: latest.blockhash,
+    feePayer: treasury.publicKey,
+  });
 
   const userAtaInfo = await connection.getAccountInfo(userAta);
   if (!userAtaInfo) {
@@ -113,7 +133,14 @@ export async function sendJitoSolToUser(
   const signature = await connection.sendTransaction(tx, [treasury]);
 
   try {
-    await connection.confirmTransaction(signature, "confirmed");
+    await connection.confirmTransaction(
+      {
+        signature,
+        blockhash: latest.blockhash,
+        lastValidBlockHeight: latest.lastValidBlockHeight,
+      },
+      "confirmed"
+    );
   } catch (e) {
     throw Object.assign(
       e instanceof Error ? e : new Error(String(e)),
