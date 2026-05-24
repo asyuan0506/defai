@@ -3,9 +3,11 @@
 import { useEffect, useRef } from "react";
 import { useChatStore } from "@/store/chat";
 import { useAuthStore } from "@/store/auth";
+import { useBalanceStore } from "@/store/balance";
 import { encryptMessage, decryptMessage } from "@/lib/crypto";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
+import { ModelPicker } from "./ModelPicker";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
@@ -33,6 +35,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
     loadMessages,
     updateConversationTitle,
     persistConversation,
+    setConversationModel,
     isLoadingMessages,
   } = useChatStore();
   const { token, encryptionKey } = useAuthStore();
@@ -84,7 +87,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, model: conversation?.modelId }),
       });
 
       if (!res.ok || !res.body) {
@@ -94,22 +97,29 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = "";
 
-      while (true) {
+      outer: while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        for (const line of chunk.split("\n")) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") break;
-            try {
-              const { delta } = JSON.parse(data);
+        // Buffer across chunk boundaries — an SSE event can split mid-line,
+        // and JSON.parse on a half-line silently drops the delta.
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") break outer;
+          try {
+            const { delta } = JSON.parse(data);
+            if (delta) {
               appendToLastMessage(conversationId, delta);
               assistantContent += delta;
-            } catch {
-              /* skip malformed */
             }
+          } catch {
+            /* skip malformed */
           }
         }
       }
@@ -119,6 +129,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
       assistantContent = "[錯誤：無法取得回應]";
     } finally {
       setStreaming(false);
+      useBalanceStore.getState().fetchBalance(token);
     }
 
     if (conversation && conversation.title === "新對話" && token) {
@@ -204,6 +215,15 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps) {
       </ScrollArea>
 
       <div className="border-t border-border px-4 pt-2 pb-4">
+        {conversation && (
+          <div className="mb-2 flex items-center">
+            <ModelPicker
+              modelId={conversation.modelId}
+              onChange={(id) => setConversationModel(token, conversationId, id)}
+              disabled={isStreaming}
+            />
+          </div>
+        )}
         <ChatInput onSend={handleSend} isStreaming={isStreaming} />
         <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
           {encryptionKey && <Lock className="size-2.5 text-ctp-green/70" />}

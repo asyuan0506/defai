@@ -28,6 +28,13 @@ export function WalletAuthButton() {
   const turnstileRef = useRef<TurnstileInstance>(null);
   const turnstileTokenRef = useRef<string | null>(null);
 
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  if (!turnstileSiteKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_TURNSTILE_SITE_KEY env var — refusing to render with always-pass test key"
+    );
+  }
+
   const isLoading = step !== "idle" && step !== "done";
   const isCaptchaPending = !captchaReady && !isLoading;
 
@@ -146,7 +153,7 @@ export function WalletAuthButton() {
       <div className="flex justify-center">
         <Turnstile
           ref={turnstileRef}
-          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA"}
+          siteKey={turnstileSiteKey}
           onSuccess={(token: string) => {
             turnstileTokenRef.current = token;
             setCaptchaReady(true);

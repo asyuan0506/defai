@@ -6,16 +6,29 @@ import { db } from "@/lib/db";
 
 const IO_NET_BASE = process.env.IO_NET_BASE;
 
+/** Per-request pre-deduct ceiling, in tokens. Both input and output are
+ *  reserved at this amount; the refund path returns the unused portion once
+ *  io.net reports the real usage. 1M is well above any realistic single-turn
+ *  consumption, so the refund will almost always cover most of the pre-deduct. */
+const PREDEDUCT_CEILING_TOKENS = 1_000_000;
+
+/** Fallback charge when usage is missing (client cancel, network error, no
+ *  final SSE chunk). Equivalent to ~one short paragraph of output at the
+ *  model's outputPricePerToken — small but non-zero so cancelling mid-stream
+ *  isn't a free-chat exploit. */
+const FALLBACK_OUTPUT_TOKENS = 512;
+
 export async function POST(req: Request) {
   // ── Auth ──────────────────────────────────────────────────────────────
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const user = await verifyToken(authHeader.slice(7));
-  if (!user) {
+  const userOrNull = await verifyToken(authHeader.slice(7));
+  if (!userOrNull) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
+  const user = userOrNull; // non-null binding — survives closure capture
 
   const { messages, model: requestedModel } = await req.json();
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -34,8 +47,12 @@ export async function POST(req: Request) {
   }
 
   // ── Pre-deduct billing ────────────────────────────────────────────────
-  // Estimate: input tokens from char count + worst-case output tokens.
-  // The same jitoSOLPrice is reused for the post-refund to avoid price
+  // Reserve the per-model worst-case ceiling (1M input + 1M output tokens).
+  // The deduct_balance RPC takes a row lock, so concurrent requests serialize
+  // and can't collectively overdraw. The number of in-flight chats a single
+  // user can sustain is therefore `floor(balance / (1M+1M-token-cost))` — a
+  // hard cap that prevents the "spawn N parallel chats" exploit.
+  // The same jitoSOLPrice is reused for the post-settle refund to avoid price
   // fluctuation creating inconsistencies within a single request.
   let jitoSOLPrice: number;
   try {
@@ -44,13 +61,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Price fetch failed: ${e?.message}` }, { status: 503 });
   }
 
-  const estimatedInputTokens = messages.reduce(
-    (acc: number, m: { content: string }) => acc + Math.ceil((m.content?.length ?? 0) / 3.5),
-    0
-  );
   const maxCostUSD =
-    estimatedInputTokens * modelInfo.inputPricePerToken +
-    modelInfo.estimatedMaxOutputTokens * modelInfo.outputPricePerToken;
+    PREDEDUCT_CEILING_TOKENS * modelInfo.inputPricePerToken +
+    PREDEDUCT_CEILING_TOKENS * modelInfo.outputPricePerToken;
   const maxCostLamports = usdToLamports(maxCostUSD, jitoSOLPrice);
 
   const sufficient = await db.deductBalance(user.walletAddress, maxCostLamports);
@@ -72,11 +85,6 @@ export async function POST(req: Request) {
         stream: true,
         stream_options: { include_usage: true }, // ask for token usage in final chunk
         messages: [
-          {
-            role: "system",
-            content:
-              "You are Decentralize LLM, a helpful AI assistant on a Web3 platform. Be helpful, concise, and friendly.",
-          },
           ...messages.map((m: { role: string; content: string }) => ({
             role: m.role,
             content: m.content,
@@ -106,6 +114,57 @@ export async function POST(req: Request) {
 
   // Captured from the final SSE chunk when stream_options.include_usage is honoured
   let usageCapture: { prompt_tokens: number; completion_tokens: number } | null = null;
+  let settled = false;
+
+  /**
+   * Run exactly once per request — both `finally` (normal end / upstream error)
+   * and `cancel()` (client disconnect) call this. The `settled` flag guards
+   * against double-refund if both paths fire.
+   */
+  function settle(streamErrored: boolean) {
+    if (settled) return;
+    settled = true;
+
+    if (streamErrored || !usageCapture) {
+      // No reliable usage (client cancel, upstream error, missing final chunk).
+      // Don't refund everything — otherwise cancelling mid-stream after reading
+      // some output would be free. Charge a flat fallback minimum equivalent
+      // to FALLBACK_OUTPUT_TOKENS at the model's outputPrice.
+      const fallbackCostUSD = FALLBACK_OUTPUT_TOKENS * modelInfo.outputPricePerToken;
+      const rawFallbackLamports = usdToLamports(fallbackCostUSD, jitoSOLPrice);
+      const fallbackLamports =
+        rawFallbackLamports > maxCostLamports ? maxCostLamports : rawFallbackLamports;
+      const refund = maxCostLamports - fallbackLamports;
+      if (refund > 0n) {
+        db.addBalance(user.walletAddress, refund).catch(console.error);
+      }
+      return;
+    }
+
+    // Sanity: io.net should always report >0 tokens on a successful stream.
+    // Treat 0/0 as suspicious and refund the full pre-deduct rather than
+    // letting the user pay nothing.
+    const totalTokens = usageCapture.prompt_tokens + usageCapture.completion_tokens;
+    if (totalTokens <= 0) {
+      db.addBalance(user.walletAddress, maxCostLamports).catch(console.error);
+      return;
+    }
+
+    const actualCostUSD =
+      usageCapture.prompt_tokens * modelInfo.inputPricePerToken +
+      usageCapture.completion_tokens * modelInfo.outputPricePerToken;
+    const rawLamports = usdToLamports(actualCostUSD, jitoSOLPrice);
+
+    // Clamp the bill to the pre-deducted ceiling. Without this clamp, a
+    // bogus / inflated `usage` from upstream would silently overcharge —
+    // but we already debited maxCostLamports, so the user's worst case
+    // must be exactly that, never more.
+    const actualLamports = rawLamports > maxCostLamports ? maxCostLamports : rawLamports;
+    const refund = maxCostLamports - actualLamports;
+    if (refund > 0n) {
+      db.addBalance(user.walletAddress, refund).catch(console.error);
+    }
+  }
 
   const readable = new ReadableStream({
     async start(controller) {
@@ -146,26 +205,15 @@ export async function POST(req: Request) {
         streamErrored = true;
       } finally {
         try { controller.close(); } catch { /* already closed */ }
-
-        // ── Billing settlement (post-refund) ──────────────────────────
-        if (streamErrored || !usageCapture) {
-          // No reliable usage data — refund the full pre-deduct.
-          // A partial response that errored mid-way is not charged.
-          db.addBalance(user.walletAddress, maxCostLamports).catch(console.error);
-        } else {
-          const actualCostUSD =
-            usageCapture.prompt_tokens * modelInfo.inputPricePerToken +
-            usageCapture.completion_tokens * modelInfo.outputPricePerToken;
-          const actualLamports = usdToLamports(actualCostUSD, jitoSOLPrice);
-          const refund = maxCostLamports - actualLamports;
-          if (refund > 0n) {
-            db.addBalance(user.walletAddress, refund).catch(console.error);
-          }
-        }
+        settle(streamErrored);
       }
     },
     cancel() {
       upstreamReader.cancel();
+      // Client disconnected mid-stream — refund whatever wasn't already settled.
+      // Without this, a fast disconnect (before `start` reaches `finally`)
+      // would leave the pre-deduct un-refunded.
+      settle(true);
     },
   });
 

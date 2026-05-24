@@ -3,9 +3,9 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { verifyToken } from "@/lib/auth";
 import { swapSolToLST } from "@/lib/jupiter";
 import { db } from "@/lib/db";
+import { RPC_URL } from "@/lib/network";
 
 const TREASURY = process.env.NEXT_PUBLIC_TREASURY_WALLET!;
-const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -55,8 +55,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No SOL received by treasury" }, { status: 400 });
   }
 
-  // Mark before swap to prevent race-condition double-swap
-  await db.markProcessed(signature, auth.walletAddress);
+  // Atomically claim the signature before swap. If another in-flight request
+  // (or a prior call) already claimed it, abort here — otherwise the same
+  // deposit could be credited twice.
+  let claimed: boolean;
+  try {
+    claimed = await db.markProcessed(signature, auth.walletAddress);
+  } catch (e: any) {
+    return NextResponse.json({ error: `markProcessed failed: ${e?.message ?? "unknown"}` }, { status: 500 });
+  }
+  if (!claimed) {
+    return NextResponse.json({ error: "Transaction already processed" }, { status: 409 });
+  }
 
   let swapResult;
   try {

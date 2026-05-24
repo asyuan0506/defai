@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   id             TEXT    PRIMARY KEY,
   wallet_address TEXT    NOT NULL,
   title          TEXT    NOT NULL DEFAULT '新對話',
+  model_id       TEXT    NOT NULL DEFAULT 'openai/gpt-oss-120b',
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -78,6 +79,33 @@ BEGIN
 END;
 $$;
 
+-- ── Withdrawals ──────────────────────────────────────────────────────
+-- One row per withdrawal attempt. The (wallet_address, request_id) UNIQUE
+-- constraint is the idempotency key — clients send a stable UUID for retries.
+-- status transitions:
+--   pending → done                (happy path)
+--   pending → insufficient        (deductBalance returned false)
+--   pending → reverted            (failure BEFORE broadcast; balance restored)
+--   pending → pending_confirm     (broadcast OK but confirmTransaction timed out)
+--   pending → needs_reconcile     (broadcast happened but error after — manual fix)
+CREATE TABLE IF NOT EXISTS withdrawals (
+  id              UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id      TEXT    NOT NULL,
+  wallet_address  TEXT    NOT NULL,
+  lst_lamports    NUMERIC NOT NULL,
+  fee_lamports    NUMERIC NOT NULL,
+  transfer_sig    TEXT,
+  status          TEXT    NOT NULL,
+  mocked          BOOLEAN NOT NULL DEFAULT FALSE,
+  error           TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (wallet_address, request_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_withdrawals_wallet
+  ON withdrawals (wallet_address, created_at DESC);
+
 -- ── Row-Level Security ───────────────────────────────────────────────
 -- All access is via the service_role key (server-side), so RLS is disabled.
 -- Enable + add policies if you switch to client-side Supabase queries.
@@ -85,3 +113,4 @@ ALTER TABLE balances             DISABLE ROW LEVEL SECURITY;
 ALTER TABLE processed_signatures DISABLE ROW LEVEL SECURITY;
 ALTER TABLE conversations        DISABLE ROW LEVEL SECURITY;
 ALTER TABLE messages             DISABLE ROW LEVEL SECURITY;
+ALTER TABLE withdrawals          DISABLE ROW LEVEL SECURITY;

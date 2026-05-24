@@ -1,5 +1,6 @@
 import { Keypair, VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
+import { IS_MAINNET, NETWORK } from "./network";
 
 const BASE = "https://api.jup.ag";
 
@@ -10,11 +11,10 @@ export const LST_MINT = "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn";
 export const LST_SYMBOL = "JitoSOL";
 
 // On devnet/testnet there is no real JitoSOL, so we simulate the swap.
-// 1 SOL ≈ 0.93 JitoSOL (approximate exchange rate for simulation).
-const MOCK_RATE = 0.93;
+// 1 SOL ≈ 0.78 JitoSOL (approximate exchange rate for simulation).
+const MOCK_RATE = 0.78;
 
-const NETWORK = process.env.SOLANA_NETWORK ?? "mainnet-beta";
-export const IS_MAINNET = NETWORK === "mainnet-beta";
+export { IS_MAINNET };
 
 async function jupiterFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const apiKey = process.env.JUPITER;
@@ -67,17 +67,23 @@ export async function swapSolToLST(lamports: bigint): Promise<SwapResult> {
     return mockSwap(lamports);
   }
 
-  const jupiterPrivateKey = process.env.JUPITER_PRIVATE_KEY;
-  if (!jupiterPrivateKey) throw new Error("Missing JUPITER_PRIVATE_KEY env var");
+  const treasurySecret = process.env.TREASURY_WALLET_PRIVATE_KEY;
+  if (!treasurySecret) throw new Error("Missing TREASURY_WALLET_PRIVATE_KEY env var");
 
-  const treasury = Keypair.fromSecretKey(bs58.decode(jupiterPrivateKey));
+  const treasury = Keypair.fromSecretKey(bs58.decode(treasurySecret));
 
   // 1. Get order
+  // slippageBps caps how far Jupiter is allowed to underdeliver vs the quoted
+  // route. 50bps (0.5%) is a sensible default for JitoSOL — a deep-liquidity
+  // LST — and bounds the worst-case credit the user can receive on a single
+  // deposit. Tighten if you start seeing route rejections; loosen for less
+  // liquid pairs.
   const params = new URLSearchParams({
     inputMint: SOL_MINT,
     outputMint: LST_MINT,
     amount: lamports.toString(),
     taker: treasury.publicKey.toBase58(),
+    slippageBps: "50",
   });
 
   const order = await jupiterFetch<{
@@ -115,10 +121,18 @@ export async function swapSolToLST(lamports: bigint): Promise<SwapResult> {
     });
   }
 
+  // Refuse to credit a 0-LST swap to the user's balance — that would mean
+  // their SOL was taken but no JitoSOL produced.
+  if (!result.outputAmountResult || result.outputAmountResult === "0") {
+    throw new Error(
+      `Swap returned no output amount (signature: ${result.signature}) — refusing to credit 0 LST`
+    );
+  }
+
   return {
     signature: result.signature,
     inputLamports: BigInt(result.inputAmountResult ?? lamports.toString()),
-    outputLamports: BigInt(result.outputAmountResult ?? "0"),
+    outputLamports: BigInt(result.outputAmountResult),
     mocked: false,
   };
 }

@@ -1,11 +1,15 @@
 const JITOSOL_MINT = "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// Short TTL keeps the deducted lamports tightly tied to spot jitoSOL/USD, so
+// the platform doesn't eat the loss if jitoSOL drops mid-window. Adds ~150–
+// 300ms to most chat requests (Jupiter round-trip), which is dwarfed by the
+// inference stream itself.
+const CACHE_TTL_MS = 5 * 1000; // 5 seconds
 
 let cache: { usd: number; expiresAt: number } | null = null;
 
 /**
  * Returns the current JitoSOL price in USD.
- * Cached for 5 minutes to avoid hitting Jupiter on every chat request.
+ * Cached for 5 seconds to avoid hitting Jupiter on every chat request.
  * Server-side only.
  */
 export async function getJitoSOLPrice(): Promise<number> {

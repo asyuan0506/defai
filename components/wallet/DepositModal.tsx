@@ -41,6 +41,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Coins, ExternalLink, TrendingUp, ArrowDownToLine } from "lucide-react";
+import { NETWORK_LABEL, IS_MAINNET } from "@/lib/network";
 
 const TREASURY = process.env.NEXT_PUBLIC_TREASURY_WALLET!;
 
@@ -96,7 +97,16 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
     try {
       const lamports = Math.floor(sol * LAMPORTS_PER_SOL);
 
-      const tx = new Transaction().add(
+      // Pre-fetch blockhash so the same one is used for build + confirm.
+      // The strategy-object confirmTransaction below requires a known
+      // lastValidBlockHeight; the deprecated single-arg form would otherwise
+      // hang until RPC timeout when the blockhash expires.
+      const latest = await connection.getLatestBlockhash("confirmed");
+
+      const tx = new Transaction({
+        recentBlockhash: latest.blockhash,
+        feePayer: publicKey,
+      }).add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: new PublicKey(TREASURY),
@@ -107,7 +117,14 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
       const signature = await sendTransaction(tx, connection);
       setStatus("confirming");
 
-      await connection.confirmTransaction(signature, "confirmed");
+      await connection.confirmTransaction(
+        {
+          signature,
+          blockhash: latest.blockhash,
+          lastValidBlockHeight: latest.lastValidBlockHeight,
+        },
+        "confirmed"
+      );
       setStatus("swapping");
 
       const res = await fetch("/api/deposit/confirm", {
@@ -238,11 +255,16 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">輸出</span>
-                  <span className="text-primary">JitoSOL (~0.93x)</span>
+                  <span className="text-primary">
+                    {IS_MAINNET ? "JitoSOL (依 Jupiter 即時報價)" : "JitoSOL (~0.78 模擬)"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">網路</span>
-                  <span className="text-ctp-green">Devnet (測試)</span>
+                  <span className={IS_MAINNET ? "text-primary" : "text-ctp-green"}>
+                    {NETWORK_LABEL}
+                    {!IS_MAINNET && " (測試)"}
+                  </span>
                 </div>
               </div>
             </Field>
